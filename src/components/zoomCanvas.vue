@@ -28,21 +28,13 @@ const { width: rootWidth, height: rootHeight } = useElementBounding($root);
 const canvasWidth = computed(() => props.canvasWidth || rootWidth.value * 3)
 const canvasHeight = computed(() => props.canvasHeight || rootHeight.value * 3)
 
-const canvasLeft = computed(() => {
-    return -(canvasWidth.value - rootWidth.value) / 2;
-})
-const canvasTop = computed(() => {
-    return -(canvasHeight.value - rootHeight.value) / 2;
-})
+const canvasLeft = computed(() => -(canvasWidth.value - rootWidth.value) / 2)
+const canvasTop = computed(() => -(canvasHeight.value - rootHeight.value) / 2)
 
 const scale = ref(1)
 const posX = ref(0)
 const posY = ref(0)
 
-
-onMounted(() => {
-
-})
 
 function limitX(v: number, scale: number) {
     const distance = (canvasWidth.value * scale - rootWidth.value) / 2;
@@ -105,8 +97,10 @@ function onWheel(e: WheelEvent) {
         posY.value = limitY(posY.value - e.deltaY * 2, scale.value);
     }
 }
+onMounted(() => {
+    window.addEventListener('wheel', onWheel, { passive: false })
+})
 
-window.addEventListener('wheel', onWheel, { passive: false })
 </script>
 
 <style scoped>
