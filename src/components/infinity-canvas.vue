@@ -1,6 +1,6 @@
 <template>
-    <div ref="root" class="infinity-canvas">
-        <div class="frame" :style="transformStyle">
+    <div ref="root" class="infinity-canvas" :class="{ 'show-line': showLine }">
+        <div class="frame" :class="{ 'show-line': showLine }" :style="transformStyle">
             <div class="item" v-for="i in 1000" :key="i">{{ i }}</div>
         </div>
     </div>
@@ -20,6 +20,18 @@ const props = defineProps({
     },
     // 是否以鼠标位置为缩放中心
     focusMouse: {
+        type: Boolean,
+        default: true
+    },
+    scaleMax: {
+        type: Number,
+        default: 5
+    },
+    scaleMin: {
+        type: Number,
+        default: 0.2
+    },
+    showLine: {
         type: Boolean,
         default: true
     }
@@ -60,7 +72,7 @@ function limitScale(v: number) {
     const canShrinkY = scaledHeight >= rootHeight.value;
 
     if (canShrinkX && canShrinkY) {
-        return Math.min(3, Math.max(0.2, v));
+        return Math.min(props.scaleMax, Math.max(props.scaleMin, v));
     }
     return scale.value;
 }
@@ -88,9 +100,8 @@ function onWheel(e: WheelEvent) {
             let dx = 0;
             let dy = 0;
 
+            // 以鼠标位置为缩放中心
             if (props.focusMouse) {
-                // 以鼠标位置为缩放中心
-
                 // 计算出鼠标相对于原始缩放中心的偏移
                 dx = e.clientX - (rootLeft.value + rootWidth.value / 2);
                 dy = e.clientY - (rootTop.value + rootHeight.value / 2);
@@ -122,6 +133,32 @@ onUnmounted(() => {
     width: 100%;
     height: 100%;
     overflow: hidden;
+}
+
+.frame {
+    position: absolute;
+    transform-origin: center center;
+
+    background: rgb(102, 102, 134) no-repeat center center;
+    display: flex;
+    flex-wrap: wrap;
+
+    & .item {
+        box-sizing: border-box;
+        text-align: center;
+        width: 100px;
+        height: 100px;
+        line-height: 100px;
+        border: 1px dashed #eee;
+        font-size: 50px;
+        font-family: Arial, Helvetica, sans-serif;
+        color: white;
+        opacity: .7;
+    }
+}
+
+
+.show-line {
 
     &::before,
     &::after {
@@ -145,54 +182,5 @@ onUnmounted(() => {
         bottom: 0;
         width: 2px;
     }
-}
-
-.frame {
-    position: absolute;
-    transform-origin: center center;
-
-    background: rgb(102, 102, 134) no-repeat center center;
-    display: flex;
-    flex-wrap: wrap;
-
-    &::before,
-    &::after {
-        display: block;
-        content: '';
-        position: absolute;
-        background-color: black;
-        z-index: 1;
-    }
-
-    &::before {
-        top: calc(50% - 1px);
-        left: 0;
-        right: 0;
-        height: 2px;
-    }
-
-    &::after {
-        left: calc(50% - 1px);
-        top: 0;
-        bottom: 0;
-        width: 2px;
-    }
-
-    /* 强制启用 GPU 加速合成层 */
-    /* will-change: transform; */
-
-    & .item {
-        box-sizing: border-box;
-        text-align: center;
-        width: 100px;
-        height: 100px;
-        line-height: 100px;
-        border: 1px dashed #eee;
-        font-size: 50px;
-        font-family: Arial, Helvetica, sans-serif;
-        color: white;
-        opacity: .7;
-    }
-
 }
 </style>
