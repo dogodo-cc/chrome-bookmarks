@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import zoomCanvas from './components/zoomCanvas.vue';
+import zoomCanvas from './components/infinity-canvas.vue';
 
 
 
@@ -10,7 +10,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- <zoomCanvas :canvasWidth="1763" :canvasHeight="708" /> -->
+  <zoomCanvas :canvasWidth="5000" :canvasHeight="3000" />
   <zoomCanvas />
 </template>
 
