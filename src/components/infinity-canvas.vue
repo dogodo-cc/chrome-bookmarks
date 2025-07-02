@@ -17,16 +17,21 @@ const props = defineProps({
     canvasHeight: {
         type: Number,
         required: false
+    },
+    // 是否以鼠标位置为缩放中心
+    focusMouse: {
+        type: Boolean,
+        default: true
     }
 })
 
 
 const $root = useTemplateRef('root');
-const { width: rootWidth, height: rootHeight } = useElementBounding($root);
+const { width: rootWidth, height: rootHeight, x: rootLeft, y: rootTop } = useElementBounding($root);
 
 // 如果没有指定画布大小，默认为容器的 3 倍
-const canvasWidth = computed(() => props.canvasWidth || rootWidth.value * 3)
-const canvasHeight = computed(() => props.canvasHeight || rootHeight.value * 3)
+const canvasWidth = computed(() => props.canvasWidth ? Math.max(props.canvasWidth, rootWidth.value) : rootWidth.value * 3)
+const canvasHeight = computed(() => props.canvasHeight ? Math.max(props.canvasHeight, rootHeight.value) : rootHeight.value * 3)
 
 const canvasLeft = computed(() => -(canvasWidth.value - rootWidth.value) / 2)
 const canvasTop = computed(() => -(canvasHeight.value - rootHeight.value) / 2)
@@ -71,7 +76,6 @@ const transformStyle = computed(() => ({
 
 function onWheel(e: WheelEvent) {
     e.preventDefault();
-    console.log(e.offsetX, e.offsetY, e)
     if (e.ctrlKey) {
         const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
         const oldScale = scale.value;
@@ -79,12 +83,43 @@ function onWheel(e: WheelEvent) {
 
         if (newScale !== oldScale) {
             const radio = newScale / oldScale;
-            // 计算因为缩放导致的偏移
-            const _x = posX.value * radio - posX.value;
-            const _y = posY.value * radio - posY.value;
-            // 修正偏移 就可以达到以视觉中心缩放的效果
-            posX.value = limitX(posX.value + _x, newScale);
-            posY.value = limitY(posY.value + _y, newScale);
+
+            if (props.focusMouse) {
+                // 以鼠标位置为缩放中心
+
+                // 计算出鼠标相对于原始缩放中心的偏移
+                const dx = e.clientX - (rootLeft.value + rootWidth.value / 2);
+                const dy = e.clientY - (rootTop.value + rootHeight.value / 2);
+
+                posX.value = limitX((posX.value - dx) * radio + dx, newScale);
+                posY.value = limitY((posY.value - dy) * radio + dy, newScale);
+
+            } else {
+                // 容器的中心点为缩放中心
+
+                // 计算因为缩放导致的偏移(缩放后的 - 原来的)
+                const _x = posX.value * radio - posX.value;
+                const _y = posY.value * radio - posY.value;
+
+                // 修正偏移 达到以视觉中心缩放的效果
+                posX.value = limitX(posX.value + _x, newScale);
+                posY.value = limitY(posY.value + _y, newScale);
+
+            }
+
+            //             const dx = props.focusMouse
+            //   ? e.clientX - (rootLeft.value + rootWidth.value / 2)
+            //   : 0
+
+            // const dy = props.focusMouse
+            //   ? e.clientY - (rootTop.value + rootHeight.value / 2)
+            //   : 0
+
+            // posX.value = limitX((posX.value - dx) * ratio + dx, newScale)
+            // posY.value = limitY((posY.value - dy) * ratio + dy, newScale)
+
+
+
             scale.value = newScale;
         }
     } else {
@@ -95,10 +130,10 @@ function onWheel(e: WheelEvent) {
 
 
 onMounted(() => {
-    window.addEventListener('wheel', onWheel, { passive: false })
+    $root.value?.addEventListener('wheel', onWheel, { passive: false })
 })
 onUnmounted(() => {
-    window.removeEventListener('wheel', onWheel)
+    $root.value?.removeEventListener('wheel', onWheel)
 })
 
 </script>
@@ -115,7 +150,7 @@ onUnmounted(() => {
         display: block;
         content: '';
         position: absolute;
-        background-color: red;
+        background-color: #fff;
         z-index: 1;
     }
 
@@ -178,6 +213,7 @@ onUnmounted(() => {
         font-size: 50px;
         font-family: Arial, Helvetica, sans-serif;
         color: white;
+        opacity: .7;
     }
 
 }
