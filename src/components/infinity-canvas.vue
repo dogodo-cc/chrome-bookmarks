@@ -84,42 +84,20 @@ function onWheel(e: WheelEvent) {
         if (newScale !== oldScale) {
             const radio = newScale / oldScale;
 
+            // 以视窗中心为缩放中心 (等于鼠标位于视窗中心点，没有偏移）
+            let dx = 0;
+            let dy = 0;
+
             if (props.focusMouse) {
                 // 以鼠标位置为缩放中心
 
                 // 计算出鼠标相对于原始缩放中心的偏移
-                const dx = e.clientX - (rootLeft.value + rootWidth.value / 2);
-                const dy = e.clientY - (rootTop.value + rootHeight.value / 2);
-
-                posX.value = limitX((posX.value - dx) * radio + dx, newScale);
-                posY.value = limitY((posY.value - dy) * radio + dy, newScale);
-
-            } else {
-                // 容器的中心点为缩放中心
-
-                // 计算因为缩放导致的偏移(缩放后的 - 原来的)
-                const _x = posX.value * radio - posX.value;
-                const _y = posY.value * radio - posY.value;
-
-                // 修正偏移 达到以视觉中心缩放的效果
-                posX.value = limitX(posX.value + _x, newScale);
-                posY.value = limitY(posY.value + _y, newScale);
-
+                dx = e.clientX - (rootLeft.value + rootWidth.value / 2);
+                dy = e.clientY - (rootTop.value + rootHeight.value / 2);
             }
 
-            //             const dx = props.focusMouse
-            //   ? e.clientX - (rootLeft.value + rootWidth.value / 2)
-            //   : 0
-
-            // const dy = props.focusMouse
-            //   ? e.clientY - (rootTop.value + rootHeight.value / 2)
-            //   : 0
-
-            // posX.value = limitX((posX.value - dx) * ratio + dx, newScale)
-            // posY.value = limitY((posY.value - dy) * ratio + dy, newScale)
-
-
-
+            posX.value = limitX((posX.value - dx) * radio + dx, newScale);
+            posY.value = limitY((posY.value - dy) * radio + dy, newScale);
             scale.value = newScale;
         }
     } else {
