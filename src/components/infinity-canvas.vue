@@ -1,14 +1,21 @@
 <template>
     <div ref="root" class="infinity-canvas" :class="{ 'show-line': showLine }">
         <div class="frame" :class="{ 'show-line': showLine }" :style="transformStyle">
-            <div class="item" v-for="i in 1000" :key="i">{{ i }}</div>
+
+            <CanvasItem :scale="scale" :id="i" v-for="(pos, i) in list" :key="i" :x="pos.x" :y="pos.y" @update="onMove">
+                {{ i }}
+            </CanvasItem>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 import { useElementBounding } from '@vueuse/core'
+// import useEllipseSpiralLayout from './use-spiral-layout'
+
+import CanvasItem from './item.vue'
+import useGridLayout from './use-grid-layout'
 const props = defineProps({
     canvasWidth: {
         type: Number,
@@ -33,7 +40,7 @@ const props = defineProps({
     },
     showLine: {
         type: Boolean,
-        default: true
+        default: false
     }
 })
 
@@ -45,6 +52,7 @@ const { width: rootWidth, height: rootHeight, x: rootLeft, y: rootTop } = useEle
 const canvasWidth = computed(() => props.canvasWidth ? Math.max(props.canvasWidth, rootWidth.value) : rootWidth.value * 3)
 const canvasHeight = computed(() => props.canvasHeight ? Math.max(props.canvasHeight, rootHeight.value) : rootHeight.value * 3)
 
+// 默认居中，方便计算 transform
 const canvasLeft = computed(() => -(canvasWidth.value - rootWidth.value) / 2)
 const canvasTop = computed(() => -(canvasHeight.value - rootHeight.value) / 2)
 
@@ -125,6 +133,35 @@ onUnmounted(() => {
     $root.value?.removeEventListener('wheel', onWheel)
 })
 
+
+
+// 布局处理
+const positions = useGridLayout({
+    width: canvasWidth,
+    height: canvasHeight,
+    count: 100,
+    // itemSize: 100,
+    itemWidth: 100,
+    itemHeight: 100,
+    gap: 20
+})
+
+const list = reactive<{ x: number, y: number }[]>([
+    {
+        x: 100,
+        y: 100,
+    },
+    {
+        x: 120,
+        y: 120,
+    }
+])
+
+function onMove(x: number, y: number, i: number) {
+    list[i] = Object.assign(list[i], { x, y })
+}
+
+
 </script>
 
 <style lang="css">
@@ -133,30 +170,33 @@ onUnmounted(() => {
     width: 100%;
     height: 100%;
     overflow: hidden;
-}
 
-.frame {
-    position: absolute;
-    transform-origin: center center;
+    .frame {
+        position: absolute;
+        transform-origin: center center;
 
-    background: rgb(102, 102, 134) no-repeat center center;
-    display: flex;
-    flex-wrap: wrap;
+        background: rgb(102, 102, 134) no-repeat center center;
+        /* display: flex;
+        flex-wrap: wrap; */
 
-    & .item {
-        box-sizing: border-box;
-        text-align: center;
-        width: 100px;
-        height: 100px;
-        line-height: 100px;
-        border: 1px dashed #eee;
-        font-size: 50px;
-        font-family: Arial, Helvetica, sans-serif;
-        color: white;
-        opacity: .7;
+        .item {
+            position: absolute;
+            left: 0;
+            top: 0;
+
+            box-sizing: border-box;
+            text-align: center;
+            width: 100px;
+            height: 100px;
+            line-height: 100px;
+            border: 1px dashed #eee;
+            font-size: 50px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: white;
+            opacity: .7;
+        }
     }
 }
-
 
 .show-line {
 
