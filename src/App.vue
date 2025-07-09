@@ -10,7 +10,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <zoomCanvas :canvasWidth="0" :canvasHeight="0" />
+  <zoomCanvas :canvasWidth="5000" :canvasHeight="3000" />
   <!-- <zoomCanvas /> -->
 </template>
 

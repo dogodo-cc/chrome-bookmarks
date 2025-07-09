@@ -1,21 +1,30 @@
 <template>
-    <div ref="root" class="item" @mousedown="onMousedown" :style="style">
+    <div ref="root" class="item" :style="style">
         <slot></slot>
     </div>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
+import useMousemove from './use-mousemove'
 
 const props = defineProps({
-    x: {
+    width: {
         type: Number,
         required: true
     },
-    y: {
+    height: {
         type: Number,
         required: true
     },
-    id: {
+    left: {
+        type: Number,
+        required: true
+    },
+    top: {
+        type: Number,
+        required: true
+    },
+    index: {
         type: Number,
         required: true
     },
@@ -26,31 +35,34 @@ const props = defineProps({
 })
 
 const emits = defineEmits<{
-    'update': [x: number, y: number, index: number]
+    'update': [id: number, data: {
+        width: number,
+        height: number,
+        left: number,
+        top: number,
+    }]
 }>()
 
 const style = computed(() => {
-    return { transform: `translate3d(${props.x}px, ${props.y}px, 0)` }
+    return {
+        transform: `translate3d(${props.left}px, ${props.top}px, 0)`,
+        width: props.width + 'px',
+        height: props.height + 'px'
+    }
 })
 
-function onMousedown(e: MouseEvent) {
-    const controller = new AbortController();
-    const signal = controller.signal;
+const $root = useTemplateRef('root');
 
-    let startX = e.clientX;
-    let startY = e.clientY;
+useMousemove($root, (x, y) => {
+    const left = props.left + x / props.scale;
+    const top = props.top + y / props.scale;
 
+    emits('update', props.index, {
+        width: props.width,
+        height: props.height,
+        left: left,
+        top: top
+    });
+})
 
-    window.addEventListener('mousemove', (e: MouseEvent) => {
-        const x = props.x + (e.clientX - startX) / props.scale;
-        const y = props.y + (e.clientY - startY) / props.scale;
-
-        emits('update', x, y, props.id);
-
-        startX = e.clientX;
-        startY = e.clientY;
-    }, { signal });
-
-    window.addEventListener('mouseup', () => controller.abort(), { signal });
-}
 </script>

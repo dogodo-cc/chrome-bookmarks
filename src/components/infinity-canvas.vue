@@ -2,7 +2,8 @@
     <div ref="root" class="infinity-canvas" :class="{ 'show-line': showLine }">
         <div class="frame" :class="{ 'show-line': showLine }" :style="transformStyle">
 
-            <CanvasItem :scale="scale" :id="i" v-for="(pos, i) in list" :key="i" :x="pos.x" :y="pos.y" @update="onMove">
+            <CanvasItem :scale="scale" :index="i" v-for="(pos, i) in list" :key="i" :width="pos.width"
+                :height="pos.height" :left="pos.left" :top="pos.top" @update="onMove">
                 {{ i }}
             </CanvasItem>
         </div>
@@ -146,19 +147,33 @@ const positions = useGridLayout({
     gap: 20
 })
 
-const list = reactive<{ x: number, y: number }[]>([
+type IData = {
+    id: number,
+    width: number,
+    height: number,
+    left: number,
+    top: number
+}
+
+const list = reactive<IData[]>([
     {
-        x: 100,
-        y: 100,
+        id: 1,
+        width: 100,
+        height: 100,
+        left: 2000,
+        top: 1500,
     },
     {
-        x: 120,
-        y: 120,
-    }
+        id: 2,
+        width: 100,
+        height: 100,
+        left: 2200,
+        top: 1500,
+    },
 ])
 
-function onMove(x: number, y: number, i: number) {
-    list[i] = Object.assign(list[i], { x, y })
+function onMove(i: number, data: Partial<IData>) {
+    list[i] = Object.assign(list[i], data)
 }
 
 
@@ -186,8 +201,6 @@ function onMove(x: number, y: number, i: number) {
 
             box-sizing: border-box;
             text-align: center;
-            width: 100px;
-            height: 100px;
             line-height: 100px;
             border: 1px dashed #eee;
             font-size: 50px;
