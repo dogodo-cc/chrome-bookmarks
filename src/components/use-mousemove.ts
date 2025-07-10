@@ -14,7 +14,7 @@ export default function useMousemove(
   useEventListener(target, "mousedown", (e: MouseEvent) => {
     if (e.button !== 0) return; // 仅限左键拖动
     e.preventDefault();
-    e.stopPropagation();
+    // e.stopPropagation();
 
     const controller = new AbortController();
     const signal = controller.signal;
