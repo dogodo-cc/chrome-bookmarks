@@ -1,17 +1,17 @@
 <template>
-    <div ref="root" class="item" :style="style">
+    <div class="resize" :style="style">
         <slot></slot>
 
         <div class="resize-box">
-            <div @mousedown.stop.left.self.prevent="onMousedown" v-for="dot in dots" :key="dot.cursor" class="dot"
-                :data-cursor="dot.cursor" :data-direction="dot.direction"
+            <div class="dot" @mousedown.stop.left.self.prevent="onDotMousedown($event, dot.direction)"
+                v-for="dot in dots" :key="dot.direction" :data-direction="dot.direction"
                 :style="{ left: dot.left, top: dot.top, cursor: dot.cursor }"></div>
         </div>
     </div>
 </template>
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
-import useMousemove from './use-mousemove'
+import { computed } from 'vue'
+import type { IInfinityCanvasItem } from './type'
 
 const props = defineProps({
     width: {
@@ -30,10 +30,6 @@ const props = defineProps({
         type: Number,
         required: true
     },
-    index: {
-        type: Number,
-        required: true
-    },
     scale: {
         type: Number,
         required: true
@@ -41,95 +37,87 @@ const props = defineProps({
 })
 
 const emits = defineEmits<{
-    'update': [id: number, data: {
-        width?: number,
-        height?: number,
-        left?: number,
-        top?: number,
-    }]
+    'update': [data: Partial<IInfinityCanvasItem>]
 }>()
 
 const style = computed(() => {
     return {
         transform: `translate3d(${props.left}px, ${props.top}px, 0)`,
         width: props.width + 'px',
-        height: props.height + 'px'
+        height: props.height + 'px',
+        '--border-width': `${2 / props.scale}px`,
+        '--area-size': `${26 / props.scale}px`,
+        '--dot-size': `${10 / props.scale}px`
     }
 })
 
-const $root = useTemplateRef('root');
-
-useMousemove($root, (x, y) => {
-    const left = props.left + x / props.scale;
-    const top = props.top + y / props.scale;
-
-    emits('update', props.index, {
-        width: props.width,
-        height: props.height,
-        left: left,
-        top: top
-    });
-})
-
 // resieze
+const halfSize = '(var(--area-size) / 2)';
+const halfBorderWidth = '(var(--border-width) / 2)';
+
+const left1 = `calc(${halfSize} * -1 - ${halfBorderWidth})`;
+const left2 = `calc(50% - ${halfSize})`;
+const left3 = `calc(100% - ${halfSize} + ${halfBorderWidth})`;
+
+const top1 = left1;
+const top2 = left2;
+const top3 = left3;
 
 const dots = [{
     cursor: 'nwse-resize',
     direction: 'left-top',
-    left: '-13px',
-    top: '-13px',
+    left: left1,
+    top: top1
 },
 {
     cursor: 'ns-resize',
     direction: 'top',
-    left: 'calc(50% - 13px)',
-    top: '-13px',
+    left: left2,
+    top: top1
 },
 {
     cursor: 'nesw-resize',
     direction: 'right-top',
-    left: 'calc(100% - 13px)',
-    top: '-13px',
+    left: left3,
+    top: top1
 },
 {
     cursor: 'ew-resize',
     direction: 'right',
-    left: 'calc(100% - 13px)',
-    top: 'calc(50% - 13px)',
+    left: left3,
+    top: top2,
 },
 {
     cursor: 'nwse-resize',
     direction: 'right-bottom',
-    left: 'calc(100% - 13px)',
-    top: 'calc(100% - 13px)',
+    left: left3,
+    top: top3,
 },
 {
     cursor: 'ns-resize',
     direction: 'bottom',
-    left: 'calc(50% - 13px)',
-    top: 'calc(100% - 13px)',
+    left: left2,
+    top: top3,
 },
 {
     cursor: 'nesw-resize',
     direction: 'left-bottom',
-    left: '-13px',
-    top: 'calc(100% - 13px)',
+    left: left1,
+    top: top3,
 },
 {
     cursor: 'ew-resize',
     direction: 'left',
-    left: '-13px',
-    top: 'calc(50% - 13px)',
+    left: left1,
+    top: top2,
 }]
 
-function onMousedown(e: MouseEvent) {
+function onDotMousedown(e: MouseEvent, direction: string) {
     const controller = new AbortController();
     const signal = controller.signal;
 
     let startX = e.clientX;
     let startY = e.clientY;
-
-    const direction = (e.target as HTMLElement)?.dataset.direction;
 
     window.addEventListener(
         "mousemove",
@@ -139,7 +127,7 @@ function onMousedown(e: MouseEvent) {
 
             switch (direction) {
                 case 'left-top':
-                    emits('update', props.index, {
+                    emits('update', {
                         height: props.height - offsetY,
                         top: props.top + offsetY,
                         width: props.width - offsetX,
@@ -147,43 +135,43 @@ function onMousedown(e: MouseEvent) {
                     });
                     break;
                 case 'top':
-                    emits('update', props.index, {
+                    emits('update', {
                         height: props.height - offsetY,
                         top: props.top + offsetY
                     });
                     break;
                 case 'right-top':
-                    emits('update', props.index, {
+                    emits('update', {
                         height: props.height - offsetY,
                         top: props.top + offsetY,
                         width: props.width + offsetX,
                     });
                     break;
                 case 'right':
-                    emits('update', props.index, {
+                    emits('update', {
                         width: props.width + offsetX,
                     });
                     break;
                 case 'right-bottom':
-                    emits('update', props.index, {
+                    emits('update', {
                         width: props.width + offsetX,
                         height: props.height + offsetY
                     });
                     break;
                 case 'bottom':
-                    emits('update', props.index, {
+                    emits('update', {
                         height: props.height + offsetY
                     });
                     break;
                 case 'left-bottom':
-                    emits('update', props.index, {
+                    emits('update', {
                         width: props.width - offsetX,
                         left: props.left + offsetX,
                         height: props.height + offsetY,
                     });
                     break;
                 case 'left':
-                    emits('update', props.index, {
+                    emits('update', {
                         width: props.width - offsetX,
                         left: props.left + offsetX,
                     });
@@ -203,24 +191,29 @@ function onMousedown(e: MouseEvent) {
 </script>
 
 <style lang="css">
+.resize {
+    position: absolute;
+}
+
 .resize-box {
     position: absolute;
-    inset: -2px;
-    border: 2px solid blueviolet;
+
+    inset: calc(var(--border-width) / 2 * -1);
+    border: var(--border-width) solid blueviolet;
 
     .dot {
         position: absolute;
-        width: 26px;
-        height: 26px;
+        width: var(--area-size);
+        height: var(--area-size);
 
         &::after {
             position: absolute;
             display: block;
             content: '';
-            width: 10px;
-            height: 10px;
-            left: 8px;
-            top: 8px;
+            width: var(--dot-size);
+            height: var(--dot-size);
+            left: calc((var(--area-size) - var(--dot-size)) / 2);
+            top: calc((var(--area-size) - var(--dot-size)) / 2);
             background-color: #fff;
             border-radius: 50%;
         }

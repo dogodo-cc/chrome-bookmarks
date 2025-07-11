@@ -1,22 +1,26 @@
 <template>
-    <div ref="root" class="infinity-canvas" :class="{ 'show-line': showLine }">
-        <div class="frame" :class="{ 'show-line': showLine }" :style="transformStyle">
+    <div @wheel.prevent="onWheel" ref="root" class="infinity-canvas">
+        <div class="infinity-canvas-frame" :style="transformStyle" @click.self="curentIndex = null">
+            <resize v-if="curentItem" :width="curentItem.width" :height="curentItem.height" :left="curentItem.left"
+                :top="curentItem.top" :scale="scale" @update="update(curentIndex!, $event)" />
 
-            <CanvasItem :scale="scale" :index="i" v-for="(pos, i) in list" :key="i" :width="pos.width"
-                :height="pos.height" :left="pos.left" :top="pos.top" @update="onMove">
-                {{ i }}
+            <CanvasItem :class="{ selected: i === curentIndex }" @select="() => curentIndex = i" :scale="scale"
+                :index="i" v-for="(item, i) in list" :key="i" :width="item.width" :height="item.height"
+                :left="item.left" :top="item.top" @update="update(i, $event)">
+                <slot :item="item" />
             </CanvasItem>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
+import { ref, computed, useTemplateRef } from 'vue'
 import { useElementBounding } from '@vueuse/core'
-// import useEllipseSpiralLayout from './use-spiral-layout'
 
-import CanvasItem from './item.vue'
-import useGridLayout from './use-grid-layout'
+import resize from './resize.vue'
+import CanvasItem from './infinity-canvas-item.vue'
+import type { IInfinityCanvasItem } from './type'
+
 const props = defineProps({
     canvasWidth: {
         type: Number,
@@ -39,11 +43,15 @@ const props = defineProps({
         type: Number,
         default: 0.2
     },
-    showLine: {
-        type: Boolean,
-        default: false
+    list: {
+        type: Array as () => IInfinityCanvasItem[],
+        default: () => []
     }
 })
+
+const emits = defineEmits<{
+    'update': [list: IInfinityCanvasItem[]],
+}>()
 
 
 const $root = useTemplateRef('root');
@@ -96,7 +104,6 @@ const transformStyle = computed(() => ({
 }))
 
 function onWheel(e: WheelEvent) {
-    e.preventDefault();
     if (e.ctrlKey) {
         const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
         const oldScale = scale.value;
@@ -126,54 +133,17 @@ function onWheel(e: WheelEvent) {
     }
 }
 
+// 选中逻辑
+const curentIndex = ref<number | null>(null);
+const curentItem = computed(() => {
+    return curentIndex.value === null ? null : props.list[curentIndex.value];
+});
 
-onMounted(() => {
-    $root.value?.addEventListener('wheel', onWheel, { passive: false })
-})
-onUnmounted(() => {
-    $root.value?.removeEventListener('wheel', onWheel)
-})
-
-
-
-// 布局处理
-const positions = useGridLayout({
-    width: canvasWidth,
-    height: canvasHeight,
-    count: 100,
-    // itemSize: 100,
-    itemWidth: 100,
-    itemHeight: 100,
-    gap: 20
-})
-
-type IData = {
-    id: number,
-    width: number,
-    height: number,
-    left: number,
-    top: number
-}
-
-const list = reactive<IData[]>([
-    {
-        id: 1,
-        width: 100,
-        height: 100,
-        left: 2000,
-        top: 1500,
-    },
-    {
-        id: 2,
-        width: 100,
-        height: 100,
-        left: 2200,
-        top: 1500,
-    },
-])
-
-function onMove(i: number, data: Partial<IData>) {
-    list[i] = Object.assign(list[i], data)
+// 通知父组件更新数据
+function update(i: number, data: Partial<IInfinityCanvasItem>) {
+    const list = [...props.list];
+    Object.assign(list[i], data)
+    emits('update', list);
 }
 
 
@@ -186,54 +156,21 @@ function onMove(i: number, data: Partial<IData>) {
     height: 100%;
     overflow: hidden;
 
-    .frame {
+    .infinity-canvas-frame {
         position: absolute;
         transform-origin: center center;
-
         background: rgb(102, 102, 134) no-repeat center center;
-        /* display: flex;
-        flex-wrap: wrap; */
 
-        .item {
-            position: absolute;
-            left: 0;
-            top: 0;
-
-            box-sizing: border-box;
-            text-align: center;
-            line-height: 100px;
-            border: 1px dashed #eee;
-            font-size: 50px;
-            font-family: Arial, Helvetica, sans-serif;
-            color: white;
-            opacity: .7;
+        .resize {
+            /* 确保不能操作选中的 item  */
+            z-index: 9;
         }
-    }
-}
 
-.show-line {
-
-    &::before,
-    &::after {
-        display: block;
-        content: '';
-        position: absolute;
-        background-color: #fff;
-        z-index: 1;
-    }
-
-    &::before {
-        top: calc(50% - 1px);
-        left: 0;
-        right: 0;
-        height: 2px;
-    }
-
-    &::after {
-        left: calc(50% - 1px);
-        top: 0;
-        bottom: 0;
-        width: 2px;
+        .infinity-canvas-item {
+            &.selected {
+                z-index: 10;
+            }
+        }
     }
 }
 </style>
