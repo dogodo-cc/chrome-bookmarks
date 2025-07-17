@@ -1,14 +1,19 @@
 <template>
     <div @wheel.prevent="onWheel" ref="root" class="infinity-canvas">
-        <div class="infinity-canvas-frame" :style="transformStyle" @click.self="curentIndex = null">
+        <div ref="frame" class="infinity-canvas-frame" :style="transformStyle" @mousedown.left="onMousedown">
             <resize v-if="curentItem" :width="curentItem.width" :height="curentItem.height" :left="curentItem.left"
                 :top="curentItem.top" :scale="scale" @update="update(curentIndex!, $event)" />
 
-            <CanvasItem :class="{ selected: i === curentIndex }" @select="() => curentIndex = i" :scale="scale"
-                :index="i" v-for="(item, i) in list" :key="i" :width="item.width" :height="item.height"
-                :left="item.left" :top="item.top" @update="update(i, $event)">
-                <slot :item="item" />
-            </CanvasItem>
+            <template v-for="(item, i) in list" :key="i">
+                <CanvasItem :class="{ current: i === curentIndex, selected: selected.includes(i) }"
+                    @select="() => curentIndex = i" :scale="scale" :index="i" :width="item.width" :height="item.height"
+                    :left="item.left" :top="item.top" v-if="showItem(item)"
+                    @update:move="(x, y) => updatePosition(i, x, y)">
+                    <slot :item="item" />
+                </CanvasItem>
+            </template>
+
+            <div :style="boxStyle"></div>
         </div>
     </div>
 </template>
@@ -16,6 +21,7 @@
 <script setup lang="ts">
 import { ref, computed, useTemplateRef } from 'vue'
 import { useElementBounding } from '@vueuse/core'
+import type { CSSProperties } from 'vue'
 
 import resize from './resize.vue'
 import CanvasItem from './infinity-canvas-item.vue'
@@ -146,6 +152,155 @@ function update(i: number, data: Partial<IInfinityCanvasItem>) {
     emits('update', list);
 }
 
+function updatePosition(i: number, x: number, y: number) {
+    if (selected.value.length) {
+        selected.value.forEach(index => {
+            updateItemPosition(index, x, y);
+        });
+    } else {
+        updateItemPosition(i, x, y);
+    }
+}
+function updateItemPosition(i: number, x: number, y: number) {
+    const item = props.list[i];
+    if (item) {
+        const left = item.left + x / scale.value;
+        const top = item.top + y / scale.value;
+        update(i, { left, top });
+    }
+}
+
+
+// 框选
+const $frame = useTemplateRef('frame');
+const positionStart = ref<{ x: number, y: number } | null>(null);
+const positionEnd = ref<{ x: number, y: number } | null>(null);
+const boxStyle = computed<CSSProperties>(() => {
+    if (!positionStart.value || !positionEnd.value) return { display: 'none' };
+
+    // 确保坐标是相对于画布原始大小(未缩放前)
+    const left = Math.min(positionStart.value.x, positionEnd.value.x);
+    const top = Math.min(positionStart.value.y, positionEnd.value.y);
+    const width = Math.abs(positionStart.value.x - positionEnd.value.x);
+    const height = Math.abs(positionStart.value.y - positionEnd.value.y);
+
+    return {
+        left: `${left}px`,
+        top: `${top}px`,
+        width: `${width}px`,
+        height: `${height}px`,
+        border: `${1 / scale.value}px dashed #fff`,
+        position: 'absolute',
+        pointerEvents: 'none' // 避免拦截鼠标事件
+    };
+});
+
+function getLocalPosition(e: MouseEvent) {
+    if (!$frame.value) return null;
+    const rect = $frame.value.getBoundingClientRect();
+    // 正确的本地坐标计算：
+    // 1. 鼠标坐标减去元素位置(已包含transform影响)
+    // 2. 再除以scale得到原始坐标
+    return {
+        x: (e.clientX - rect.left) / scale.value,
+        y: (e.clientY - rect.top) / scale.value
+    };
+}
+
+function onMousedown(e: MouseEvent) {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    positionStart.value = getLocalPosition(e);
+    const startTime = Date.now();
+
+    window.addEventListener(
+        "mousemove",
+        (e: MouseEvent) => {
+            positionEnd.value = getLocalPosition(e);
+            updateSelectedItems()
+        },
+        { signal }
+    );
+    window.addEventListener("mouseup", () => {
+        controller.abort();
+        positionStart.value = null;
+        positionEnd.value = null;
+        if (Date.now() - startTime < 200) {
+            clickFrame()
+        }
+    }, { signal });
+}
+
+
+const selected = ref<number[]>([]);
+
+function updateSelectedItems() {
+    if (!positionStart.value || !positionEnd.value) {
+        selected.value = [];
+        return;
+    }
+
+    const left = Math.min(positionStart.value.x, positionEnd.value.x);
+    const top = Math.min(positionStart.value.y, positionEnd.value.y);
+    const right = Math.max(positionStart.value.x, positionEnd.value.x);
+    const bottom = Math.max(positionStart.value.y, positionEnd.value.y);
+
+    selected.value = props.list
+        .reduce<number[]>((result, item, index) => {
+            const itemLeft = item.left;
+            const itemTop = item.top;
+            const itemRight = item.left + item.width;
+            const itemBottom = item.top + item.height;
+
+            const overlaps = !(
+                right < itemLeft || left > itemRight ||
+                bottom < itemTop || top > itemBottom
+            );
+
+            if (overlaps) {
+                result.push(index);
+            }
+            return result;
+        }, [])
+}
+
+function clickFrame() {
+    curentIndex.value = null;
+    selected.value = [];
+}
+
+const viewport = computed(() => {
+    const viewportWidth = rootWidth.value / scale.value;
+    const viewportHeight = rootHeight.value / scale.value;
+
+    const centerX = -canvasLeft.value - posX.value / scale.value;
+    const centerY = -canvasTop.value - posY.value / scale.value;
+
+    return {
+        left: centerX - viewportWidth / 2,
+        right: centerX + viewportWidth / 2,
+        top: centerY - viewportHeight / 2,
+        bottom: centerY + viewportHeight / 2,
+    };
+});
+
+function showItem(item: IInfinityCanvasItem) {
+    const itemLeft = item.left;
+    const itemRight = item.left + item.width;
+    const itemTop = item.top;
+    const itemBottom = item.top + item.height;
+    const vp = viewport.value;
+
+    const visible = !(
+        itemRight < vp.left ||
+        itemLeft > vp.right ||
+        itemBottom < vp.top ||
+        itemTop > vp.bottom
+    );
+    return visible;
+}
+
 
 </script>
 
@@ -160,6 +315,7 @@ function update(i: number, data: Partial<IInfinityCanvasItem>) {
         position: absolute;
         transform-origin: center center;
         background: rgb(102, 102, 134) no-repeat center center;
+        box-sizing: border-box;
 
         .resize {
             /* 确保不能操作选中的 item  */
@@ -167,8 +323,12 @@ function update(i: number, data: Partial<IInfinityCanvasItem>) {
         }
 
         .infinity-canvas-item {
-            &.selected {
+            &.current {
                 z-index: 10;
+            }
+
+            &.selected {
+                outline: 1px solid blue;
             }
         }
     }

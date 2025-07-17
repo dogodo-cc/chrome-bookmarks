@@ -6,7 +6,6 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { IInfinityCanvasItem } from './type'
 
 const props = defineProps({
     width: {
@@ -32,7 +31,7 @@ const props = defineProps({
 })
 
 const emits = defineEmits<{
-    'update': [data: Partial<IInfinityCanvasItem>],
+    'update:move': [x: number, y: number],
     'select': []
 }>()
 
@@ -59,13 +58,7 @@ function onMousedown(e: MouseEvent) {
             const offsetX = e.clientX - startX;
             const offsetY = e.clientY - startY;
 
-            const left = props.left + offsetX / props.scale;
-            const top = props.top + offsetY / props.scale;
-
-            emits('update', {
-                left: left,
-                top: top
-            });
+            emits('update:move', offsetX, offsetY);
 
             startX = e.clientX;
             startY = e.clientY;
