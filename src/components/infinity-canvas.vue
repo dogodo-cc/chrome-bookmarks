@@ -5,10 +5,10 @@
                 :top="curentItem.top" :scale="scale" @update="update(curentIndex!, $event)" />
 
             <template v-for="(item, i) in list" :key="i">
-                <CanvasItem :class="{ current: i === curentIndex, selected: selected.includes(i) }"
+                <CanvasItem v-if="showItem(item)"
+                    :class="{ current: i === curentIndex, selected: selected.includes(i) }"
                     @select="() => curentIndex = i" :scale="scale" :index="i" :width="item.width" :height="item.height"
-                    :left="item.left" :top="item.top" v-if="showItem(item)"
-                    @update:move="(x, y) => updatePosition(i, x, y)">
+                    :left="item.left" :top="item.top" @update:move="(x, y) => updatePosition(i, x, y)">
                     <slot :item="item" />
                 </CanvasItem>
             </template>
@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, useTemplateRef } from 'vue'
+import { ref, computed, useTemplateRef, nextTick } from 'vue'
 import { useElementBounding } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 
@@ -171,7 +171,7 @@ function updateItemPosition(i: number, x: number, y: number) {
 }
 
 
-// 框选
+// 框选开始
 const $frame = useTemplateRef('frame');
 const positionStart = ref<{ x: number, y: number } | null>(null);
 const positionEnd = ref<{ x: number, y: number } | null>(null);
@@ -218,7 +218,9 @@ function onMousedown(e: MouseEvent) {
         "mousemove",
         (e: MouseEvent) => {
             positionEnd.value = getLocalPosition(e);
-            updateSelectedItems()
+            nextTick(() => {
+                updateSelectedItems();
+            });
         },
         { signal }
     );
@@ -227,11 +229,12 @@ function onMousedown(e: MouseEvent) {
         positionStart.value = null;
         positionEnd.value = null;
         if (Date.now() - startTime < 200) {
+            // 不能直接监听 click 事件，否则每次框选完毕都会触发
+            // 所以使用 mousedown 事件的时间差来判断是否是点击
             clickFrame()
         }
     }, { signal });
 }
-
 
 const selected = ref<number[]>([]);
 
@@ -242,8 +245,8 @@ function updateSelectedItems() {
     }
 
     const left = Math.min(positionStart.value.x, positionEnd.value.x);
-    const top = Math.min(positionStart.value.y, positionEnd.value.y);
     const right = Math.max(positionStart.value.x, positionEnd.value.x);
+    const top = Math.min(positionStart.value.y, positionEnd.value.y);
     const bottom = Math.max(positionStart.value.y, positionEnd.value.y);
 
     selected.value = props.list
@@ -253,6 +256,7 @@ function updateSelectedItems() {
             const itemRight = item.left + item.width;
             const itemBottom = item.top + item.height;
 
+            // 检查两个矩形是否有重叠 （反向判断： 不重叠的情况取反）
             const overlaps = !(
                 right < itemLeft || left > itemRight ||
                 bottom < itemTop || top > itemBottom
@@ -270,35 +274,44 @@ function clickFrame() {
     selected.value = [];
 }
 
+// 框选结束
+
+// 计算视口范围（以画布原始坐标为基准）
 const viewport = computed(() => {
-    const viewportWidth = rootWidth.value / scale.value;
-    const viewportHeight = rootHeight.value / scale.value;
+    // 画布中心点在容器中的位置
+    const canvasCenterX = rootWidth.value / 2 + posX.value;
+    const canvasCenterY = rootHeight.value / 2 + posY.value;
 
-    const centerX = -canvasLeft.value - posX.value / scale.value;
-    const centerY = -canvasTop.value - posY.value / scale.value;
+    // 画布原点（左上角）在容器中的位置
+    const canvasOriginX = canvasCenterX - (canvasWidth.value * scale.value) / 2;
+    const canvasOriginY = canvasCenterY - (canvasHeight.value * scale.value) / 2;
 
-    return {
-        left: centerX - viewportWidth / 2,
-        right: centerX + viewportWidth / 2,
-        top: centerY - viewportHeight / 2,
-        bottom: centerY + viewportHeight / 2,
-    };
+    // 容器左上角在画布原始坐标系下的位置
+    const left = (0 - canvasOriginX) / scale.value;
+    const top = (0 - canvasOriginY) / scale.value;
+
+    // 容器右下角在画布原始坐标系下的位置
+    const right = (rootWidth.value - canvasOriginX) / scale.value;
+    const bottom = (rootHeight.value - canvasOriginY) / scale.value;
+
+    return { left, top, right, bottom };
 });
 
+// 判断 item 是否在视口内
 function showItem(item: IInfinityCanvasItem) {
+    const vp = viewport.value;
     const itemLeft = item.left;
     const itemRight = item.left + item.width;
     const itemTop = item.top;
     const itemBottom = item.top + item.height;
-    const vp = viewport.value;
 
-    const visible = !(
+    // 只要有交集就显示
+    return !(
         itemRight < vp.left ||
         itemLeft > vp.right ||
         itemBottom < vp.top ||
         itemTop > vp.bottom
     );
-    return visible;
 }
 
 
