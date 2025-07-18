@@ -1,5 +1,4 @@
 <template>
-    <!-- .prevent 会导致内部 input 无法获取焦点 -->
     <div class="infinity-canvas-item" @mousedown.stop.left="onMousedown" :style="style">
         <slot></slot>
     </div>
@@ -24,15 +23,15 @@ const props = defineProps({
         type: Number,
         required: true
     },
-    scale: {
+    index: {
         type: Number,
         required: true
     }
 })
 
 const emits = defineEmits<{
-    'update:move': [x: number, y: number],
-    'select': []
+    'update:move': [index: number, x: number, y: number],
+    'current-selected': [index: number]
 }>()
 
 const style = computed(() => {
@@ -58,7 +57,7 @@ function onMousedown(e: MouseEvent) {
             const offsetX = e.clientX - startX;
             const offsetY = e.clientY - startY;
 
-            emits('update:move', offsetX, offsetY);
+            emits('update:move', props.index, offsetX, offsetY);
 
             startX = e.clientX;
             startY = e.clientY;
@@ -66,10 +65,10 @@ function onMousedown(e: MouseEvent) {
         { signal }
     );
     window.addEventListener("mouseup", () => {
-        controller.abort();
         if (Date.now() - startTime < 200) {
-            emits('select');
+            emits('current-selected', props.index);
         }
+        controller.abort();
     }, { signal });
 }
 </script>

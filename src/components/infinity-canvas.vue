@@ -7,8 +7,8 @@
             <template v-for="(item, i) in list" :key="i">
                 <CanvasItem v-if="showItem(item)"
                     :class="{ current: i === curentIndex, selected: selected.includes(i) }"
-                    @select="() => curentIndex = i" :scale="scale" :index="i" :width="item.width" :height="item.height"
-                    :left="item.left" :top="item.top" @update:move="(x, y) => updatePosition(i, x, y)">
+                    @current-selected="($event) => curentIndex = $event" :index="i" :width="item.width"
+                    :height="item.height" :left="item.left" :top="item.top" @update:move="updatePosition">
                     <slot :item="item" />
                 </CanvasItem>
             </template>
@@ -56,7 +56,7 @@ const props = defineProps({
 })
 
 const emits = defineEmits<{
-    'update': [list: IInfinityCanvasItem[]],
+    'update': [index: number, item: IInfinityCanvasItem],
 }>()
 
 
@@ -146,27 +146,30 @@ const curentItem = computed(() => {
 });
 
 // 通知父组件更新数据
-function update(i: number, data: Partial<IInfinityCanvasItem>) {
-    const list = [...props.list];
-    Object.assign(list[i], data)
-    emits('update', list);
+function update(index: number, data: Partial<IInfinityCanvasItem>) {
+    // 不要直接修改 props.list
+    // 也不要返回整个更新后的 [...props.list]，只返回更新的项和索引， 这样外面就不会频繁的创建数组
+    emits('update', index, Object.assign({}, props.list[index], data));
 }
 
-function updatePosition(i: number, x: number, y: number) {
+function updatePosition(index: number, x: number, y: number) {
     if (selected.value.length) {
-        selected.value.forEach(index => {
-            updateItemPosition(index, x, y);
+        if (!selected.value.includes(index)) {
+            selected.value = [index];
+        }
+        selected.value.forEach(i => {
+            updateItemPosition(i, x, y);
         });
     } else {
-        updateItemPosition(i, x, y);
+        updateItemPosition(index, x, y);
     }
 }
-function updateItemPosition(i: number, x: number, y: number) {
-    const item = props.list[i];
+function updateItemPosition(index: number, x: number, y: number) {
+    const item = props.list[index];
     if (item) {
         const left = item.left + x / scale.value;
         const top = item.top + y / scale.value;
-        update(i, { left, top });
+        update(index, { left, top });
     }
 }
 
@@ -331,7 +334,7 @@ function showItem(item: IInfinityCanvasItem) {
         box-sizing: border-box;
 
         .resize {
-            /* 确保不能操作选中的 item  */
+            /* 不能大于选中的 infinity-canvas-item  */
             z-index: 9;
         }
 
