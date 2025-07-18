@@ -92,8 +92,8 @@ onMounted(async () => {
     } else {
       bookmarkFolders.value.push({
         ...folder,
-        left: Math.random() * (canvasWidth - 200),
-        top: Math.random() * (canvasHeight - 200),
+        left: canvasWidth / 2 - Math.random() * 200 * (Math.random() > 0.5 ? 1 : -1),
+        top: canvasHeight / 2 - Math.random() * 200 * (Math.random() > 0.5 ? 1 : -1),
         width: 200,
         height: 200
       });
