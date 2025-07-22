@@ -29,7 +29,7 @@ const debounceUpdate = useDebounceFn(() => {
     ])
   );
   chrome.storage.sync.set({ position: data });
-}, 100)
+}, 200)
 
 
 // 画布的初始位置和缩放比例
@@ -38,7 +38,7 @@ const initPosY = ref<number | undefined>(undefined);
 const initScale = ref<number | undefined>(undefined);
 const onUpdateTransform = useDebounceFn((scale: number, posX: number, posY: number) => {
   chrome.storage.sync.set({ transform: { scale, posX, posY } });
-}, 100)
+}, 500)
 
 
 type GroundBookmark = {
@@ -67,7 +67,8 @@ const loadBookmarks = () => {
             }
           })
 
-          if (bookmarks.length > 0) {
+          // 根文件夹的 id 为 '0'
+          if (node.id !== '0') {
             folders.push({
               id: node.id,
               title: node.title || '未命名文件夹',
@@ -108,8 +109,8 @@ async function getBoookmarks() {
         ...folder,
         left: canvasWidth / 2 - Math.random() * window.innerWidth * (Math.random() > 0.5 ? 1 : -1),
         top: canvasHeight / 2 - Math.random() * window.innerHeight * (Math.random() > 0.5 ? 1 : -1),
-        width: 200,
-        height: 200
+        width: 500,
+        height: 400
       });
     }
   }
@@ -197,6 +198,15 @@ function onDrop(e: DragEvent) {
   });
 }
 
+
+function getTargetIndex(card: ICard): number {
+  if (!Array.isArray(card.bookmarks) || card.bookmarks.length === 0) {
+    // 如果没有书签，返回 0
+    return 0;
+  }
+  return Math.max(...card.bookmarks.map((b: chrome.bookmarks.BookmarkTreeNode) => b.index ?? 0)) + 1;
+}
+
 </script>
 
 <template>
@@ -208,10 +218,10 @@ function onDrop(e: DragEvent) {
       <div class="card">
         <h3>{{ item.title }}</h3>
         <ul @wheel="onCardWhell" @drop="onDrop" @dragover.prevent :data-folder-id="item.id"
-          :data-index="Math.max(...item.bookmarks.map((b: chrome.bookmarks.BookmarkTreeNode) => b.index)) + 1">
+          :data-index="getTargetIndex(item as ICard)">
           <li @mousedown.stop @dragstart="onDragstart" v-for="o in item.bookmarks" :key="o.id" :title="o.title"
             :data-id="o.id" :data-index="o.index" :data-folder-id="item.id">
-            <img :src="`http://icon.bqb.cool/?url=${o.url}`" alt="">
+            <img :src="`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(o.url)}`" alt="logo">
             <a :href="o.url" target="_blank">{{ o.title || '未命名书签' }}</a>
           </li>
         </ul>

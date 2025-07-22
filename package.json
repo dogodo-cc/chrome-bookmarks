@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "bookmark:dev": "vite build --watch --config vite.config.bookmark.ts",
-    "bookmark:build": "vue-tsc -b && vite build --config vite.config.bookmark.ts"
+    "dev": "vite --config vite.config.dev.ts",
+    "bookmark:dev": "vite build --watch ",
+    "bookmark:build": "vue-tsc -b && vite build"
   },
   "dependencies": {
     "vue": "^3.5.17"

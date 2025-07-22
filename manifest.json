@@ -1,19 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Better Bookmarks",
-  "version": "1.0",
-  "description": "一个更好用的书签管理器",
-  "permissions": [
-    "bookmarks",
-    "storage",
-    "tabs"
-  ],
+  "name": "Better-Bookmarks",
+  "version": "1.0.0",
+  "description": "一个以无限画布平铺展示的书签管理器",
+  "permissions": ["bookmarks", "storage"],
   "icons": {
     "16": "icons/icon.png",
     "48": "icons/icon.png",
     "128": "icons/icon.png"
   },
   "chrome_url_overrides": {
-    "bookmarks": "dist/bookmarks.html"
+    "newtab": "dist/bookmarks.html"
   }
 }
