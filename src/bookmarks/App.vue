@@ -207,6 +207,53 @@ function getTargetIndex(card: ICard): number {
   return Math.max(...card.bookmarks.map((b: chrome.bookmarks.BookmarkTreeNode) => b.index ?? 0)) + 1;
 }
 
+
+chrome.runtime.onMessage.addListener((message) => {
+
+  if (message.action === "exportLayoutConfig") {
+    chrome.storage.sync.get("position", (result) => {
+      if (result.position) {
+        const blob = new Blob([JSON.stringify(result.position, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "layoutConfig.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        alert("没有可导出的布局配置");
+      }
+    });
+  }
+
+  if (message.action === "importLayoutConfig") {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target?.result as string);
+          chrome.storage.sync.set({ position: data }, () => {
+            getBoookmarks();
+          });
+        } catch (error) {
+          console.error("解析 JSON 失败:", error);
+          alert("导入的文件格式不正确，请确保是有效的 JSON 文件");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+});
+
 </script>
 
 <template>

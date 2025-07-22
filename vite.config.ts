@@ -1,5 +1,3 @@
-
-
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "node:path";
@@ -11,6 +9,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         bookmarks: resolve(__dirname, "bookmarks.html"),
+        background: resolve(__dirname, "src/background/index.ts"),
       },
       output: {
         entryFileNames: "[name].js",
