@@ -93,10 +93,10 @@ onMounted(async () => {
     initScale.value = scale;
   });
 
-  getBoookmarks();
+  getBookmarks();
 });
 
-async function getBoookmarks() {
+async function getBookmarks() {
   const list: GroundBookmark[] = (await loadBookmarks());
   const storedPosition = (await chrome.storage.sync.get('position')).position ?? {} as Record<string, IInfinityCanvasItem>;
 
@@ -194,7 +194,7 @@ function onDrop(e: DragEvent) {
       console.error(chrome.runtime.lastError);
       return;
     }
-    getBoookmarks();
+    getBookmarks();
   });
 }
 
@@ -241,7 +241,7 @@ chrome.runtime.onMessage.addListener((message) => {
         try {
           const data = JSON.parse(e.target?.result as string);
           chrome.storage.sync.set({ position: data }, () => {
-            getBoookmarks();
+            getBookmarks();
           });
         } catch (error) {
           console.error("解析 JSON 失败:", error);
