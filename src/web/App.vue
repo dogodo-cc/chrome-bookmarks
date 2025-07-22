@@ -14,8 +14,8 @@ const rowList = Array.from({ length: 100 }, (_, i) => ({
 }))
 const list = ref<IInfinityCanvasItem[]>(getInitialLayoutWithOverflow(rowList, 15000, 13000, window.innerWidth, window.innerHeight));
 
-function update(index: number, data: IInfinityCanvasItem) {
-  list.value[index] = data;
+function update(index: number, data: Partial<IInfinityCanvasItem>) {
+  Object.assign(list.value[index], data);
 }
 
 function onInput(id: string | number, e: Event) {

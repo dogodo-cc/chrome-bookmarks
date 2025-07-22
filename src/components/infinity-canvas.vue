@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, useTemplateRef, nextTick } from 'vue'
+import { ref, computed, useTemplateRef, nextTick, watch } from 'vue'
 import { useElementBounding } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 
@@ -52,11 +52,24 @@ const props = defineProps({
     list: {
         type: Array as () => IInfinityCanvasItem[],
         default: () => []
+    },
+    initScale: {
+        type: Number,
+        default: 1
+    },
+    initPosX: {
+        type: Number,
+        default: 0
+    },
+    initPosY: {
+        type: Number,
+        default: 0
     }
 })
 
 const emits = defineEmits<{
-    'update': [index: number, item: IInfinityCanvasItem],
+    'update': [index: number, item: Partial<IInfinityCanvasItem>],
+    'update:transform': [scale: number, posX: number, posY: number]
 }>()
 
 
@@ -71,9 +84,13 @@ const canvasHeight = computed(() => props.canvasHeight ? Math.max(props.canvasHe
 const canvasLeft = computed(() => -(canvasWidth.value - rootWidth.value) / 2)
 const canvasTop = computed(() => -(canvasHeight.value - rootHeight.value) / 2)
 
-const scale = ref(1)
-const posX = ref(0)
-const posY = ref(0)
+const scale = ref(limitScale(props.initScale));
+const posX = ref(limitX(props.initPosX, scale.value));
+const posY = ref(limitY(props.initPosY, scale.value));
+
+watch([scale, posX, posY], () => {
+    emits('update:transform', scale.value, posX.value, posY.value);
+}, { immediate: false })
 
 // -distance < v < distance
 function limitX(v: number, scale: number) {
@@ -86,7 +103,7 @@ function limitY(v: number, scale: number) {
     return Math.min(distance, Math.max(-distance, v));
 }
 
-function limitScale(v: number) {
+function limitScale(v: number): number {
     const scaledWidth = canvasWidth.value * v;
     const scaledHeight = canvasHeight.value * v;
 
@@ -149,7 +166,16 @@ const curentItem = computed(() => {
 function update(index: number, data: Partial<IInfinityCanvasItem>) {
     // 不要直接修改 props.list
     // 也不要返回整个更新后的 [...props.list]，只返回更新的项和索引， 这样外面就不会频繁的创建数组
-    emits('update', index, Object.assign({}, props.list[index], data));
+
+    if (data.left !== undefined) {
+        data.left = Math.min(data.left, canvasWidth.value - props.list[index].width);
+        data.left = Math.max(data.left, 0);
+    }
+    if (data.top !== undefined) {
+        data.top = Math.min(data.top, canvasHeight.value - props.list[index].height);
+        data.top = Math.max(data.top, 0);
+    }
+    emits('update', index, data);
 }
 
 function updatePosition(index: number, x: number, y: number) {
