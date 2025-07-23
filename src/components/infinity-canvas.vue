@@ -1,5 +1,5 @@
 <template>
-    <div @wheel.prevent="onWheel" ref="root" class="infinity-canvas">
+    <div @wheel.prevent="onWheel" @mousedown.middle="onMousedownMiddle" ref="root" class="infinity-canvas">
         <div ref="frame" class="infinity-canvas-frame" :style="transformStyle" @mousedown.left="onMousedown">
             <resize v-if="curentItem" :width="curentItem.width" :height="curentItem.height" :left="curentItem.left"
                 :top="curentItem.top" :scale="scale" @update="update(curentIndex!, $event)" />
@@ -154,6 +154,29 @@ function onWheel(e: WheelEvent) {
         posX.value = limitX(posX.value - e.deltaX * 2, scale.value);
         posY.value = limitY(posY.value - e.deltaY * 2, scale.value);
     }
+}
+
+// 鼠标中键拖动画布移动
+function onMousedownMiddle(e: MouseEvent) {
+    e.preventDefault();
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    let startX = e.clientX;
+    let startY = e.clientY;
+
+    window.addEventListener("mousemove", (e: MouseEvent) => {
+        posX.value = limitX(posX.value + (e.clientX - startX), scale.value);
+        posY.value = limitY(posY.value + (e.clientY - startY), scale.value);
+
+        startX = e.clientX;
+        startY = e.clientY;
+
+    }, { signal });
+
+    window.addEventListener("mouseup", () => {
+        controller.abort();
+    }, { signal });
 }
 
 // 选中逻辑
