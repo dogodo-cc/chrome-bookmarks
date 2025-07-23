@@ -230,6 +230,7 @@ chrome.runtime.onMessage.addListener((message) => {
 
   if (message.action === "importLayoutConfig") {
     const input = document.createElement("input");
+    input.style.display = "none"; // 隐藏文件输入框
     input.type = "file";
     input.accept = ".json";
     input.onchange = (event) => {
@@ -249,7 +250,9 @@ chrome.runtime.onMessage.addListener((message) => {
         }
       };
       reader.readAsText(file);
+      input.remove();
     };
+    document.body.appendChild(input);
     input.click();
   }
 });

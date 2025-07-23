@@ -47,7 +47,7 @@ const props = defineProps({
     },
     scaleMin: {
         type: Number,
-        default: 0.2
+        default: 0.3
     },
     list: {
         type: Array as () => IInfinityCanvasItem[],
