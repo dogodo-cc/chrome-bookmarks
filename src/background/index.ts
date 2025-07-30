@@ -1,14 +1,17 @@
 // 当扩展安装时创建右键菜单项
 chrome.runtime.onInstalled.addListener(() => {
+  const patterns = ["chrome-extension://" + chrome.runtime.id + "/*"];
   chrome.contextMenus.create({
     id: "exportLayoutConfig",
     title: "导出布局配置",
     contexts: ["page"],
+    documentUrlPatterns: patterns,
   });
   chrome.contextMenus.create({
     id: "importLayoutConfig",
     title: "导入布局配置",
     contexts: ["page"],
+    documentUrlPatterns: patterns,
   });
 });
 

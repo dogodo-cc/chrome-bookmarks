@@ -257,6 +257,18 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
+function removeBookmark(id: string) {
+  if (confirm("确定要删除这个书签吗？")) {
+    chrome.bookmarks.remove(id, () => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError);
+        return;
+      }
+      getBookmarks();
+    });
+  }
+}
+
 </script>
 
 <template>
@@ -273,6 +285,9 @@ chrome.runtime.onMessage.addListener((message) => {
             :data-id="o.id" :data-index="o.index" :data-folder-id="item.id">
             <img :src="`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(o.url)}`" alt="logo">
             <a :href="o.url" target="_blank">{{ o.title || '未命名书签' }}</a>
+            <div title="删除" class="remove" @click="removeBookmark(o.id)">
+              ❌
+            </div>
           </li>
         </ul>
       </div>
@@ -356,6 +371,24 @@ chrome.runtime.onMessage.addListener((message) => {
         color: #0077b6;
         text-decoration: none;
       }
+    }
+
+    .remove {
+      margin-left: 8px;
+      cursor: pointer;
+      color: #ff4d4f;
+      font-size: 12px;
+      width: 24px;
+      height: 24px;
+      align-items: center;
+      justify-content: center;
+      display: none;
+    }
+  }
+
+  li:hover {
+    .remove {
+      display: flex;
     }
   }
 
