@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import zoomCanvas from '../components/infinity-canvas.vue';
 import type { IInfinityCanvasItem } from '../components/type.js';
 import { getInitialLayoutWithOverflow } from '../components/layout.js'
-import VirtualList from '../components/virtual-list/VirtualList.vue';
+import VirtualList from '../components/virtual-list/index.vue';
 
 const rowList = Array.from({ length: 2 }, (_, i) => ({
   id: i,
@@ -19,14 +19,28 @@ function update(index: number, data: Partial<IInfinityCanvasItem>) {
   Object.assign(list.value[index], data);
 }
 
+const list2 = Array(100)
+  .fill(true)
+  .map((_, index) => {
+    return {
+      id: index + 1,
+      text: `第${index + 1}条数据`,
+    };
+  });
 
 </script>
 
 <template>
   <zoomCanvas :list="list" @update="update" :canvasWidth="15000" :canvasHeight="13000">
     <template #default="{ item }">
-      <div class="card" @wheel.stop>
-        <VirtualList />
+      <div class="card">
+        <VirtualList :list="list2" :item-height="30">
+          <template #default="{ data }">
+            <div style="padding: 0 10px; border-bottom: 1px solid #eee; line-height: 30px;">
+              {{ data.text }}
+            </div>
+          </template>
+        </VirtualList>
       </div>
     </template>
   </zoomCanvas>
