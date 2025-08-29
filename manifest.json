@@ -10,9 +10,12 @@
     "128": "icons/icon.png"
   },
   "chrome_url_overrides": {
-    "bookmarks": "dist/bookmarks.html"
+    "bookmarks": "bookmarks.html"
   },
   "background": {
-    "service_worker": "dist/background.js"
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
   }
 }

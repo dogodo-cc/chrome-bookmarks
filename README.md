@@ -13,7 +13,11 @@
 <div align="center">
 <p>
     <a href="https://chromewebstore.google.com/detail/ieahkhpkiipfkiecndclbbfjfhceiknh?utm_source=item-share-cb" target="_blank">
-    <img src="./images/chrome.png" width="16" /> Chrome 商店安装
+    <img src="./images/chrome.png" width="16" /> Chrome 
+  </a>
+
+  <a href="https://chromewebstore.google.com/detail/ieahkhpkiipfkiecndclbbfjfhceiknh?utm_source=item-share-cb" target="_blank">
+    <img src="./images/edge.png" width="16" /> Edge 
   </a>
 </p>
 

@@ -29,7 +29,7 @@ const debounceUpdate = useDebounceFn(() => {
     ])
   );
   chrome.storage.sync.set({ position: data });
-}, 200)
+}, 100)
 
 
 // 画布的初始位置和缩放比例
@@ -269,6 +269,10 @@ function removeBookmark(id: string) {
   }
 }
 
+
+function go2otherUrl(url: string) {
+  chrome.tabs.create({ url });
+}
 </script>
 
 <template>
@@ -284,7 +288,8 @@ function removeBookmark(id: string) {
           <li @mousedown.stop @dragstart="onDragstart" v-for="o in item.bookmarks" :key="o.id" :title="o.title"
             :data-id="o.id" :data-index="o.index" :data-folder-id="item.id">
             <img :src="`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(o.url)}`" alt="logo">
-            <a :href="o.url" target="_blank">{{ o.title || '未命名书签' }}</a>
+            <a v-if="o.url.startsWith('http')" :href="o.url" target="_blank">{{ o.title || '未命名书签' }}</a>
+            <a href="#" @click.prevent="go2otherUrl(o.url)" v-else>{{ o.title || '未命名书签' }}</a>
             <div title="删除" class="remove" @click="removeBookmark(o.id)">
               ❌
             </div>
