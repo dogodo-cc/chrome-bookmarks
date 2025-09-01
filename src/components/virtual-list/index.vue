@@ -85,7 +85,6 @@ function onWheel(e: WheelEvent) {
 .virtual-wrapper {
     width: 100%;
     height: 100%;
-    background-color: cadetblue;
     overflow-y: auto;
 }
 </style>

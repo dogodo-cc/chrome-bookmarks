@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import zoomCanvas from '../components/infinity-canvas.vue';
+import VirtualList from '../components/virtual-list/index.vue';
 import type { IInfinityCanvasItem } from '../components/type.d.ts';
 
 // 定义画布的宽度和高度
@@ -117,25 +118,6 @@ async function getBookmarks() {
   bookmarkFolders.value = _list;
 }
 
-// 妥善处理卡片的滚轮事件 决定是否传递给画布
-function onCardWhell(e: WheelEvent) {
-  if (e.ctrlKey) {
-    // 让画布响应缩放
-    return;
-  }
-  if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget as HTMLElement;
-    const isAtTop = scrollTop === 0 && e.deltaY < 0;
-    const isAtBottom = scrollTop >= scrollHeight - clientHeight - 1 && e.deltaY > 0;
-
-    // 如果已经到顶部或底部，且滚动方向是“继续滚动”的方向，则不阻止冒泡
-    if (isAtTop || isAtBottom) {
-      return;
-    }
-    // 阻止冒泡，防止触发画布的滚动事件
-    e.stopPropagation();
-  }
-}
 
 function onDragstart(e: DragEvent) {
   const target = e.currentTarget as HTMLElement;
@@ -147,11 +129,13 @@ function onDragstart(e: DragEvent) {
     folderId,
     index
   }))
+
+  e.dataTransfer?.setDragImage(target, target.offsetWidth / 2, target.offsetHeight / 2);
 }
 
 function getLi(e: EventTarget | null): HTMLElement | null {
   if (!e) return null;
-  if (e instanceof HTMLElement && e.tagName === 'LI') {
+  if (e instanceof HTMLElement && e.className === 'bookmark-item') {
     return e;
   }
   if (e instanceof HTMLElement && e.parentElement) {
@@ -257,9 +241,9 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
-function removeBookmark(id: string) {
+function removeBookmark(id: string | number) {
   if (confirm("确定要删除这个书签吗？")) {
-    chrome.bookmarks.remove(id, () => {
+    chrome.bookmarks.remove(String(id), () => {
       if (chrome.runtime.lastError) {
         console.error(chrome.runtime.lastError);
         return;
@@ -283,18 +267,23 @@ function go2otherUrl(url: string) {
     <template #default="{ item }">
       <div class="card">
         <h3>{{ item.title }}</h3>
-        <ul @wheel="onCardWhell" @drop="onDrop" @dragover.prevent :data-folder-id="item.id"
-          :data-index="getTargetIndex(item as ICard)">
-          <li @mousedown.stop @dragstart="onDragstart" v-for="o in item.bookmarks" :key="o.id" :title="o.title"
-            :data-id="o.id" :data-index="o.index" :data-folder-id="item.id">
-            <img :src="`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(o.url)}`" alt="logo">
-            <a v-if="o.url.startsWith('http')" :href="o.url" target="_blank">{{ o.title || '未命名书签' }}</a>
-            <a href="#" @click.prevent="go2otherUrl(o.url)" v-else>{{ o.title || '未命名书签' }}</a>
-            <div title="删除" class="remove" @click="removeBookmark(o.id)">
-              ❌
-            </div>
-          </li>
-        </ul>
+        <div class="bookmark-list-container">
+          <VirtualList :list="item.bookmarks" :item-height="30" @dragover.prevent @drop="onDrop"
+            :data-folder-id="item.id" :data-index="getTargetIndex(item as ICard)">
+            <template #default="{ data: o }">
+              <div class="bookmark-item" @mousedown.stop @dragstart="onDragstart" :title="o.title" :data-id="o.id"
+                :data-index="o.index" :data-folder-id="item.id">
+                <img :src="`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(o.url)}`"
+                  alt="logo">
+                <a v-if="o.url.startsWith('http')" :href="o.url" target="_blank">{{ o.title || '未命名书签' }}</a>
+                <a href="#" @click.prevent="go2otherUrl(o.url)" v-else>{{ o.title || '未命名书签' }}</a>
+                <div title="删除" class="remove" @click="removeBookmark(o.id)">
+                  ❌
+                </div>
+              </div>
+            </template>
+          </VirtualList>
+        </div>
       </div>
     </template>
   </zoomCanvas>
@@ -338,15 +327,12 @@ function go2otherUrl(url: string) {
     }
   }
 
-  ul {
+  .bookmark-list-container {
     height: calc(100% - var(--title-height));
-    overflow-y: auto;
-    padding: 8px 0 0;
-    margin: 0;
   }
 
-  li {
-    list-style: none;
+  .bookmark-item {
+    height: 30px;
     padding: 0;
     display: flex;
     align-items: center;
@@ -391,14 +377,10 @@ function go2otherUrl(url: string) {
     }
   }
 
-  li:hover {
+  .bookmark-item:hover {
     .remove {
       display: flex;
     }
-  }
-
-  li+li {
-    margin-top: 4px;
   }
 }
 </style>

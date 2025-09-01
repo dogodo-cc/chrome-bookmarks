@@ -10,5 +10,5 @@ const root = process.cwd();
   await rm(join(root, `${manifest.name}.zip`), { force: true });
 
   // only for macOS
-  exec(`zip -r ${manifest.name}.zip ${zipFolder}`);
+  exec(`zip -r ${manifest.name}.zip dist`);
 })();

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Better-Bookmarks",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "一个以无限画布平铺展示的书签管理器",
   "permissions": ["bookmarks", "storage", "contextMenus"],
   "icons": {
