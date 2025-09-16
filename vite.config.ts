@@ -35,7 +35,6 @@ export default defineConfig({
       input: {
         bookmarks: resolve(__dirname, "bookmarks.html"),
         popup: resolve(__dirname, "popup.html"),
-        background: resolve(__dirname, "src/background/index.ts"),
       },
       output: {
         entryFileNames: "[name].js",

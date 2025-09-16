@@ -29,7 +29,10 @@ const debounceUpdate = useDebounceFn(() => {
       }
     ])
   );
-  chrome.storage.sync.set({ position: data });
+  chrome.storage.sync.set({ position: data }).catch((e) => {
+    console.error('Error saving position:', e);
+    chrome.storage.local.set({ position: data });
+  });
 }, 100)
 
 
@@ -38,7 +41,10 @@ const initPosX = ref<number | undefined>(undefined);
 const initPosY = ref<number | undefined>(undefined);
 const initScale = ref<number | undefined>(undefined);
 const onUpdateTransform = useDebounceFn((scale: number, posX: number, posY: number) => {
-  chrome.storage.sync.set({ transform: { scale, posX, posY } });
+  chrome.storage.sync.set({ transform: { scale, posX, posY } }).catch((e) => {
+    console.error('Error saving transform:', e);
+    chrome.storage.local.set({ transform: { scale, posX, posY } });
+  });
 }, 500)
 
 
@@ -87,11 +93,19 @@ const loadBookmarks = () => {
 
 onMounted(async () => {
 
-  chrome.storage.sync.get('transform', (result) => {
+  chrome.storage.sync.get('transform').then((result) => {
     const { scale = 1, posX = 0, posY = 0 } = result.transform || {};
     initPosX.value = posX;
     initPosY.value = posY;
     initScale.value = scale;
+  }).catch((e) => {
+    console.error('Error loading transform from sync:', e);
+    chrome.storage.local.get('transform').then((result) => {
+      const { scale = 1, posX = 0, posY = 0 } = result.transform || {};
+      initPosX.value = posX;
+      initPosY.value = posY;
+      initScale.value = scale;
+    });
   });
 
   getBookmarks();
@@ -99,7 +113,7 @@ onMounted(async () => {
 
 async function getBookmarks() {
   const list: GroundBookmark[] = (await loadBookmarks());
-  const storedPosition = (await chrome.storage.sync.get('position')).position ?? {} as Record<string, IInfinityCanvasItem>;
+  const storedPosition = (await chrome.storage.sync.get('position')).position ?? (await chrome.storage.local.get('position')).position ?? {} as Record<string, IInfinityCanvasItem>;
 
   const _list = []
   for (const folder of list) {
@@ -191,55 +205,6 @@ function getTargetIndex(card: ICard): number {
   return Math.max(...card.bookmarks.map((b: chrome.bookmarks.BookmarkTreeNode) => b.index ?? 0)) + 1;
 }
 
-
-chrome.runtime.onMessage.addListener((message) => {
-
-  if (message.action === "exportLayoutConfig") {
-    chrome.storage.sync.get("position", (result) => {
-      if (result.position) {
-        const blob = new Blob([JSON.stringify(result.position, null, 2)], {
-          type: "application/json",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "layoutConfig.json";
-        a.click();
-        URL.revokeObjectURL(url);
-      } else {
-        alert("没有可导出的布局配置");
-      }
-    });
-  }
-
-  if (message.action === "importLayoutConfig") {
-    const input = document.createElement("input");
-    input.style.display = "none"; // 隐藏文件输入框
-    input.type = "file";
-    input.accept = ".json";
-    input.onchange = (event) => {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = JSON.parse(e.target?.result as string);
-          chrome.storage.sync.set({ position: data }, () => {
-            getBookmarks();
-          });
-        } catch (error) {
-          console.error("解析 JSON 失败:", error);
-          alert("导入的文件格式不正确，请确保是有效的 JSON 文件");
-        }
-      };
-      reader.readAsText(file);
-      input.remove();
-    };
-    document.body.appendChild(input);
-    input.click();
-  }
-});
 
 function removeBookmark(id: string | number) {
   if (confirm("确定要删除这个书签吗？")) {
