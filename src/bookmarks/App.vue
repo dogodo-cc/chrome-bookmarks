@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import InfinityCanvas from '../components/infinity-canvas.vue';
 import FolderCard from '../components/FolderCard.vue';
+import HelpGuide from '../components/HelpGuide.vue';
 import type { IInfinityCanvasItem } from '../components/type.d.ts';
 
 // 定义画布的宽度和高度
@@ -110,14 +111,16 @@ const loadBookmarks = () => {
 
 onMounted(async () => {
 
-  chrome.storage.sync.get('transform').then((result) => {
+  type StoredTransform = { scale?: number; posX?: number; posY?: number };
+
+  chrome.storage.sync.get<{ transform?: StoredTransform }>('transform').then((result) => {
     const { scale = 1, posX = 0, posY = 0 } = result.transform || {};
     initPosX.value = posX;
     initPosY.value = posY;
     initScale.value = scale;
   }).catch((e) => {
     console.error('Error loading transform from sync:', e);
-    chrome.storage.local.get('transform').then((result) => {
+    chrome.storage.local.get<{ transform?: StoredTransform }>('transform').then((result) => {
       const { scale = 1, posX = 0, posY = 0 } = result.transform || {};
       initPosX.value = posX;
       initPosY.value = posY;
@@ -130,7 +133,10 @@ onMounted(async () => {
 
 async function getBookmarks() {
   const list: GroundBookmark[] = (await loadBookmarks());
-  const storedPosition = (await chrome.storage.sync.get('position')).position ?? (await chrome.storage.local.get('position')).position ?? {} as Record<string, IInfinityCanvasItem>;
+  type StoredPosition = { position?: Record<string, IInfinityCanvasItem> };
+  const storedPosition = (await chrome.storage.sync.get<StoredPosition>('position')).position
+    ?? (await chrome.storage.local.get<StoredPosition>('position')).position
+    ?? {};
   positionCache.value = storedPosition;
 
   const _list = []
@@ -278,6 +284,7 @@ function go2otherUrl(url: string) {
 </script>
 
 <template>
+  <HelpGuide />
   <InfinityCanvas v-if="initScale" :list="bookmarkFolders" @update="update" @update:transform="onUpdateTransform"
     :canvasWidth="canvasWidth" :canvasHeight="canvasHeight" :init-pos-x="initPosX" :init-pos-y="initPosY"
     :init-scale="initScale">

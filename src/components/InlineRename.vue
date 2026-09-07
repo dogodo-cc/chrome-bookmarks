@@ -1,5 +1,6 @@
 <template>
-  <div class="inline-rename" @mousedown.stop>
+  <!-- 只有编辑态才阻止 mousedown 冒泡，否则展示态会挡住卡片拖拽 -->
+  <div class="inline-rename" @mousedown="onMousedown">
     <template v-if="isEditing">
       <input
         ref="inputRef"
@@ -80,6 +81,12 @@ function cancel() {
   isEditing.value = false;
   draft.value = props.value ?? '';
   emit('cancel');
+}
+
+function onMousedown(e: MouseEvent) {
+  if (isEditing.value) {
+    e.stopPropagation();
+  }
 }
 </script>
 
