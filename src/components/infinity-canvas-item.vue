@@ -50,26 +50,35 @@ function onMousedown(e: MouseEvent) {
     let startX = e.clientX;
     let startY = e.clientY;
     const startTime = Date.now();
+    let hasMoved = false;
 
-    window.addEventListener(
-        "mousemove",
-        (e: MouseEvent) => {
-            const offsetX = e.clientX - startX;
-            const offsetY = e.clientY - startY;
+    const handleMousemove = (event: MouseEvent) => {
+        const offsetX = event.clientX - startX;
+        const offsetY = event.clientY - startY;
 
-            emits('update:move', props.index, offsetX, offsetY);
+        if (Math.abs(offsetX) > 3 || Math.abs(offsetY) > 3) {
+            hasMoved = true;
+        }
 
-            startX = e.clientX;
-            startY = e.clientY;
-        },
-        { signal }
-    );
-    window.addEventListener("mouseup", () => {
-        if (Date.now() - startTime < 200) {
+        emits('update:move', props.index, offsetX, offsetY);
+
+        startX = event.clientX;
+        startY = event.clientY;
+    };
+
+    const handleMouseup = () => {
+        const duration = Date.now() - startTime;
+        const isClick = !hasMoved && duration < 250;
+
+        if (isClick) {
             emits('current-selected', props.index);
         }
+
         controller.abort();
-    }, { signal });
+    };
+
+    window.addEventListener("mousemove", handleMousemove, { signal });
+    window.addEventListener("mouseup", handleMouseup, { signal });
 }
 </script>
 <style lang="css">

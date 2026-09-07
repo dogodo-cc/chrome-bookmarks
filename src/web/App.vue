@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import zoomCanvas from '../components/infinity-canvas.vue';
+import InfinityCanvas from '../components/infinity-canvas.vue';
 import type { IInfinityCanvasItem } from '../components/type.js';
 import { getInitialLayoutWithOverflow } from '../components/layout.js'
-import VirtualList from '../components/virtual-list/index.vue';
+import VirtualList from '../components/VirtualList.vue';
 
 const rowList = Array.from({ length: 2 }, (_, i) => ({
   id: i,
@@ -30,7 +30,7 @@ function update(index: number, data: Partial<IInfinityCanvasItem>) {
 </script>
 
 <template>
-  <zoomCanvas :list="list" @update="update" :canvasWidth="15000" :canvasHeight="13000">
+  <InfinityCanvas :list="list" @update="update" :canvasWidth="15000" :canvasHeight="13000">
     <template #default="{ item }">
       <div class="card">
         <VirtualList :list="item.children" :item-height="30">
@@ -42,7 +42,7 @@ function update(index: number, data: Partial<IInfinityCanvasItem>) {
         </VirtualList>
       </div>
     </template>
-  </zoomCanvas>
+  </InfinityCanvas>
 </template>
 
 <style lang="css">

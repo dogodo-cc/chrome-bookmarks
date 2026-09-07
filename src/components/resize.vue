@@ -115,6 +115,7 @@ const dots = [{
 function onDotMousedown(e: MouseEvent, direction: string) {
     const controller = new AbortController();
     const signal = controller.signal;
+    const minSize = 20;
 
     let startX = e.clientX;
     let startY = e.clientY;
@@ -128,51 +129,51 @@ function onDotMousedown(e: MouseEvent, direction: string) {
             switch (direction) {
                 case 'left-top':
                     emits('update', {
-                        height: props.height - offsetY,
+                        height: Math.max(minSize, props.height - offsetY),
                         top: props.top + offsetY,
-                        width: props.width - offsetX,
+                        width: Math.max(minSize, props.width - offsetX),
                         left: props.left + offsetX
                     });
                     break;
                 case 'top':
                     emits('update', {
-                        height: props.height - offsetY,
+                        height: Math.max(minSize, props.height - offsetY),
                         top: props.top + offsetY
                     });
                     break;
                 case 'right-top':
                     emits('update', {
-                        height: props.height - offsetY,
+                        height: Math.max(minSize, props.height - offsetY),
                         top: props.top + offsetY,
-                        width: props.width + offsetX,
+                        width: Math.max(minSize, props.width + offsetX),
                     });
                     break;
                 case 'right':
                     emits('update', {
-                        width: props.width + offsetX,
+                        width: Math.max(minSize, props.width + offsetX),
                     });
                     break;
                 case 'right-bottom':
                     emits('update', {
-                        width: props.width + offsetX,
-                        height: props.height + offsetY
+                        width: Math.max(minSize, props.width + offsetX),
+                        height: Math.max(minSize, props.height + offsetY)
                     });
                     break;
                 case 'bottom':
                     emits('update', {
-                        height: props.height + offsetY
+                        height: Math.max(minSize, props.height + offsetY)
                     });
                     break;
                 case 'left-bottom':
                     emits('update', {
-                        width: props.width - offsetX,
+                        width: Math.max(minSize, props.width - offsetX),
                         left: props.left + offsetX,
-                        height: props.height + offsetY,
+                        height: Math.max(minSize, props.height + offsetY),
                     });
                     break;
                 case 'left':
                     emits('update', {
-                        width: props.width - offsetX,
+                        width: Math.max(minSize, props.width - offsetX),
                         left: props.left + offsetX,
                     });
                     break;

@@ -1,15 +1,21 @@
 <template>
-    <div @wheel.prevent="onWheel" @mousedown.middle="onMousedownMiddle" ref="root" class="infinity-canvas">
-        <div ref="frame" class="infinity-canvas-frame" :style="transformStyle" @mousedown.left="onMousedown">
-            <resize v-if="curentItem" :width="curentItem.width" :height="curentItem.height" :left="curentItem.left"
-                :top="curentItem.top" :scale="scale" @update="update(curentIndex!, $event)" />
+    <!--
+        画布统一接收未被子列表截断的 wheel：
+        VirtualList 在内部可滚动时会 stopPropagation，边界处才会到这里。
+        .prevent 是为了避免浏览器默认滚动，只让画布自己的 pan/zoom 生效。
+    -->
+    <div @wheel.prevent="onWheel" @mousedown.right="onMousedownRight" @contextmenu.prevent ref="root"
+        class="infinity-canvas" :class="{ panning: isPanning }">
+        <div ref="frame" class="infinity-canvas-frame" @mousedown.left="onMousedown">
+            <resize v-if="currentItem" :width="currentItem.width" :height="currentItem.height" :left="currentItem.left"
+                :top="currentItem.top" :scale="scale" @update="update(currentIndex!, $event)" />
 
-            <template v-for="(item, i) in list" :key="i">
-                <CanvasItem v-if="showItem(item)"
-                    :class="{ current: i === curentIndex, selected: selected.includes(i) }"
-                    @current-selected="($event) => curentIndex = $event" :index="i" :width="item.width"
-                    :height="item.height" :left="item.left" :top="item.top" @update:move="updatePosition">
-                    <slot :item="item" />
+            <template v-for="visible in visibleItems" :key="visible.item?.id ?? `canvas-item-${visible.index}`">
+                <CanvasItem
+                    :class="{ current: visible.index === currentIndex, selected: selected.includes(visible.index) }"
+                    @current-selected="($event) => currentIndex = $event" :index="visible.index" :width="visible.item.width"
+                    :height="visible.item.height" :left="visible.item.left" :top="visible.item.top" @update:move="updatePosition">
+                    <slot :item="visible.item" />
                 </CanvasItem>
             </template>
 
@@ -19,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, useTemplateRef, nextTick, watch } from 'vue'
+import { ref, computed, useTemplateRef, nextTick, watch, onMounted } from 'vue'
 import { useElementBounding } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 
@@ -72,8 +78,8 @@ const emits = defineEmits<{
     'update:transform': [scale: number, posX: number, posY: number]
 }>()
 
-
 const $root = useTemplateRef('root');
+const $frame = useTemplateRef('frame');
 const { width: rootWidth, height: rootHeight, x: rootLeft, y: rootTop } = useElementBounding($root);
 
 // 如果没有指定画布大小，默认为容器的 3 倍
@@ -88,9 +94,29 @@ const scale = ref(limitScale(props.initScale));
 const posX = ref(limitX(props.initPosX, scale.value));
 const posY = ref(limitY(props.initPosY, scale.value));
 
+let frameSyncRafId: number | null = null;
+function syncFrameStyle() {
+    if (!$frame.value) return;
+
+    $frame.value.style.width = `${canvasWidth.value}px`;
+    $frame.value.style.height = `${canvasHeight.value}px`;
+    $frame.value.style.left = `${canvasLeft.value}px`;
+    $frame.value.style.top = `${canvasTop.value}px`;
+    $frame.value.style.transform = `translate3d(${posX.value}px, ${posY.value}px, 0) scale(${scale.value})`;
+}
+
+function scheduleFrameStyle() {
+    if (frameSyncRafId !== null) return;
+    frameSyncRafId = requestAnimationFrame(() => {
+        frameSyncRafId = null;
+        syncFrameStyle();
+    });
+}
+
 watch([scale, posX, posY], () => {
     emits('update:transform', scale.value, posX.value, posY.value);
-}, { immediate: false })
+    scheduleFrameStyle();
+}, { immediate: true })
 
 // -distance < v < distance
 function limitX(v: number, scale: number) {
@@ -117,50 +143,71 @@ function limitScale(v: number): number {
     return scale.value;
 }
 
-
-const transformStyle = computed(() => ({
-    transform: `translate3d(${posX.value}px, ${posY.value}px, 0) scale(${scale.value})`,
-    width: canvasWidth.value + 'px',
-    height: canvasHeight.value + 'px',
-    left: canvasLeft.value + 'px',
-    top: canvasTop.value + 'px',
-}))
-
-function onWheel(e: WheelEvent) {
-    if (e.ctrlKey) {
-        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-        const oldScale = scale.value;
-        const newScale = limitScale(oldScale - delta * 0.01);
-
-        if (newScale !== oldScale) {
-            const radio = newScale / oldScale;
-
-            // 以视窗中心为缩放中心 (等于鼠标位于视窗中心点，没有偏移）
-            let dx = 0;
-            let dy = 0;
-
-            // 以鼠标位置为缩放中心
-            if (props.focusMouse) {
-                // 计算出鼠标相对于原始缩放中心的偏移
-                dx = e.clientX - (rootLeft.value + rootWidth.value / 2);
-                dy = e.clientY - (rootTop.value + rootHeight.value / 2);
-            }
-
-            posX.value = limitX((posX.value - dx) * radio + dx, newScale);
-            posY.value = limitY((posY.value - dy) * radio + dy, newScale);
-            scale.value = newScale;
-        }
-    } else {
-        posX.value = limitX(posX.value - e.deltaX * 2, scale.value);
-        posY.value = limitY(posY.value - e.deltaY * 2, scale.value);
+function normalizeWheelAxis(delta: number, mode: number) {
+    // macBook 触摸板双指移动/滚动会走 wheel，而且 deltaMode 可能不是 0。
+    // 必须按 X/Y 分别归一化，不能把两个轴混成一个值，否则会出现“向下移动时顺带偏右”的现象。
+    if (mode === 1) {
+        return delta * 16;
     }
+    if (mode === 2) {
+        return delta * 120;
+    }
+    return delta;
 }
 
-// 鼠标中键拖动画布移动
-function onMousedownMiddle(e: MouseEvent) {
+function applyPan(deltaX: number, deltaY: number) {
+    posX.value = limitX(posX.value - deltaX, scale.value);
+    posY.value = limitY(posY.value - deltaY, scale.value);
+}
+
+function zoomAtPointer(nextScale: number, clientX: number, clientY: number) {
+    const radio = nextScale / scale.value;
+    const dx = props.focusMouse ? clientX - (rootLeft.value + rootWidth.value / 2) : 0;
+    const dy = props.focusMouse ? clientY - (rootTop.value + rootHeight.value / 2) : 0;
+
+    posX.value = limitX((posX.value - dx) * radio + dx, nextScale);
+    posY.value = limitY((posY.value - dy) * radio + dy, nextScale);
+    scale.value = nextScale;
+}
+
+function handleWheelZoom(e: WheelEvent) {
+    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    const oldScale = scale.value;
+    const nextScale = limitScale(oldScale - normalizeWheelAxis(delta, e.deltaMode) * 0.01);
+
+    if (nextScale === oldScale) {
+        return;
+    }
+
+    zoomAtPointer(nextScale, e.clientX, e.clientY);
+}
+
+function handleWheelPan(e: WheelEvent) {
+    const deltaX = normalizeWheelAxis(e.deltaX, e.deltaMode);
+    const deltaY = normalizeWheelAxis(e.deltaY, e.deltaMode);
+    applyPan(deltaX * 2, deltaY * 2);
+}
+
+function onWheel(e: WheelEvent) {
+    // 这里的关键点：Mac 触摸板双指移动是 wheel 事件，不是普通 touch/pointer 拖动。
+    // 处理时必须保留真实的 deltaX/deltaY 轴向信息，不能用单一主轴值覆盖两条轴。
+    if (e.ctrlKey) {
+        handleWheelZoom(e);
+        return;
+    }
+
+    handleWheelPan(e);
+}
+
+// 鼠标右键拖动画布移动
+const isPanning = ref(false);
+
+function onMousedownRight(e: MouseEvent) {
     e.preventDefault();
     const controller = new AbortController();
     const signal = controller.signal;
+
+    isPanning.value = true;
 
     let startX = e.clientX;
     let startY = e.clientY;
@@ -175,29 +222,41 @@ function onMousedownMiddle(e: MouseEvent) {
     }, { signal });
 
     window.addEventListener("mouseup", () => {
+        isPanning.value = false;
         controller.abort();
     }, { signal });
 }
 
 // 选中逻辑
-const curentIndex = ref<number | null>(null);
-const curentItem = computed(() => {
-    return curentIndex.value === null ? null : props.list[curentIndex.value];
+const currentIndex = ref<number | null>(null);
+const currentItem = computed(() => {
+    return currentIndex.value === null ? null : props.list[currentIndex.value];
 });
 
 // 通知父组件更新数据
 function update(index: number, data: Partial<IInfinityCanvasItem>) {
-    // 不要直接修改 props.list
-    // 也不要返回整个更新后的 [...props.list]，只返回更新的项和索引， 这样外面就不会频繁的创建数组
+    const current = props.list[index];
+    if (!current) return;
 
+    const nextWidth = data.width !== undefined ? Math.max(20, data.width) : current.width;
+    const nextHeight = data.height !== undefined ? Math.max(20, data.height) : current.height;
+
+    const nextLeft = data.left !== undefined ? Math.min(Math.max(0, data.left), Math.max(0, canvasWidth.value - nextWidth)) : current.left;
+    const nextTop = data.top !== undefined ? Math.min(Math.max(0, data.top), Math.max(0, canvasHeight.value - nextHeight)) : current.top;
+
+    if (data.width !== undefined) {
+        data.width = nextWidth;
+    }
+    if (data.height !== undefined) {
+        data.height = nextHeight;
+    }
     if (data.left !== undefined) {
-        data.left = Math.min(data.left, canvasWidth.value - props.list[index].width);
-        data.left = Math.max(data.left, 0);
+        data.left = nextLeft;
     }
     if (data.top !== undefined) {
-        data.top = Math.min(data.top, canvasHeight.value - props.list[index].height);
-        data.top = Math.max(data.top, 0);
+        data.top = nextTop;
     }
+
     emits('update', index, data);
 }
 
@@ -222,9 +281,7 @@ function updateItemPosition(index: number, x: number, y: number) {
     }
 }
 
-
 // 框选开始
-const $frame = useTemplateRef('frame');
 const positionStart = ref<{ x: number, y: number } | null>(null);
 const positionEnd = ref<{ x: number, y: number } | null>(null);
 const boxStyle = computed<CSSProperties>(() => {
@@ -322,7 +379,7 @@ function updateSelectedItems() {
 }
 
 function clickFrame() {
-    curentIndex.value = null;
+    currentIndex.value = null;
     selected.value = [];
 }
 
@@ -349,23 +406,52 @@ const viewport = computed(() => {
     return { left, top, right, bottom };
 });
 
-// 判断 item 是否在视口内
-function showItem(item: IInfinityCanvasItem) {
-    const vp = viewport.value;
-    const itemLeft = item.left;
-    const itemRight = item.left + item.width;
-    const itemTop = item.top;
-    const itemBottom = item.top + item.height;
+const visibleIndexes = ref<number[]>([])
+let visibleUpdateRafId: number | null = null;
 
-    // 只要有交集就显示
-    return !(
-        itemRight < vp.left ||
-        itemLeft > vp.right ||
-        itemBottom < vp.top ||
-        itemTop > vp.bottom
-    );
+function calcVisibleIndexes() {
+    const vp = viewport.value;
+    const nextVisible: number[] = [];
+
+    for (let i = 0; i < props.list.length; i++) {
+        const item = props.list[i];
+        const itemLeft = item.left;
+        const itemRight = item.left + item.width;
+        const itemTop = item.top;
+        const itemBottom = item.top + item.height;
+
+        if (!(itemRight < vp.left || itemLeft > vp.right || itemBottom < vp.top || itemTop > vp.bottom)) {
+            nextVisible.push(i);
+        }
+    }
+
+    visibleIndexes.value = nextVisible;
 }
 
+function scheduleVisibleUpdate() {
+    if (visibleUpdateRafId !== null) return;
+    visibleUpdateRafId = requestAnimationFrame(() => {
+        visibleUpdateRafId = null;
+        calcVisibleIndexes();
+    });
+}
+
+const visibleItems = computed(() =>
+    visibleIndexes.value.map(index => ({ index, item: props.list[index] })).filter(item => item.item)
+)
+
+watch([() => props.list.length, rootWidth, rootHeight, scale, posX, posY], () => {
+    scheduleVisibleUpdate();
+}, { flush: 'post' })
+
+watch(() => props.list, () => {
+    scheduleVisibleUpdate();
+}, { deep: true, flush: 'post' })
+
+onMounted(() => {
+    syncFrameStyle();
+    scheduleVisibleUpdate();
+})
 
 </script>
 
@@ -375,6 +461,14 @@ function showItem(item: IInfinityCanvasItem) {
     width: 100%;
     height: 100%;
     overflow: hidden;
+
+    &.panning {
+        cursor: grabbing;
+
+        * {
+            cursor: grabbing !important;
+        }
+    }
 
     .infinity-canvas-frame {
         position: absolute;

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
-import zoomCanvas from '../components/infinity-canvas.vue';
-import VirtualList from '../components/virtual-list/index.vue';
+import InfinityCanvas from '../components/infinity-canvas.vue';
+import FolderCard from '../components/FolderCard.vue';
 import type { IInfinityCanvasItem } from '../components/type.d.ts';
 
 // 定义画布的宽度和高度
@@ -11,27 +11,41 @@ const canvasHeight = 8000;
 
 
 function update(index: number, data: Partial<IInfinityCanvasItem>) {
-  Object.assign(bookmarkFolders.value[index], data);
+  const item = bookmarkFolders.value[index];
+  if (!item) return;
+
+  Object.assign(item, data);
+  dirtyPositionIds.add(item.id);
   debounceUpdate();
 }
 
 
 // 同步位置信息到 Chrome 存储 （不宜太频繁）
 const debounceUpdate = useDebounceFn(() => {
-  const data = Object.fromEntries(
-    bookmarkFolders.value.map(item => [
-      item.id,
-      {
-        left: item.left,
-        top: item.top,
-        width: item.width,
-        height: item.height
-      }
-    ])
-  );
-  chrome.storage.sync.set({ position: data }).catch((e) => {
+  if (!dirtyPositionIds.size) {
+    return;
+  }
+
+  const nextPosition = { ...positionCache.value };
+
+  for (const id of dirtyPositionIds) {
+    const item = bookmarkFolders.value.find((folder) => folder.id === id);
+    if (!item) continue;
+
+    nextPosition[id] = {
+      left: item.left,
+      top: item.top,
+      width: item.width,
+      height: item.height
+    };
+  }
+
+  positionCache.value = nextPosition;
+  dirtyPositionIds.clear();
+
+  chrome.storage.sync.set({ position: nextPosition }).catch((e) => {
     console.error('Error saving position:', e);
-    chrome.storage.local.set({ position: data });
+    chrome.storage.local.set({ position: nextPosition });
   });
 }, 100)
 
@@ -57,6 +71,9 @@ type GroundBookmark = {
 type ICard = GroundBookmark & IInfinityCanvasItem;
 
 const bookmarkFolders = ref<ICard[]>([]);
+const positionCache = ref<Record<string, IInfinityCanvasItem>>({});
+const dirtyPositionIds = new Set<string>();
+
 const loadBookmarks = () => {
   return new Promise<GroundBookmark[]>((resolve) => {
     chrome.bookmarks.getTree((nodes) => {
@@ -114,6 +131,7 @@ onMounted(async () => {
 async function getBookmarks() {
   const list: GroundBookmark[] = (await loadBookmarks());
   const storedPosition = (await chrome.storage.sync.get('position')).position ?? (await chrome.storage.local.get('position')).position ?? {} as Record<string, IInfinityCanvasItem>;
+  positionCache.value = storedPosition;
 
   const _list = []
   for (const folder of list) {
@@ -202,13 +220,48 @@ function getTargetIndex(card: ICard): number {
     // 如果没有书签，返回 0
     return 0;
   }
-  return Math.max(...card.bookmarks.map((b: chrome.bookmarks.BookmarkTreeNode) => b.index ?? 0)) + 1;
+
+  let maxIndex = 0;
+  for (const bookmark of card.bookmarks) {
+    const index = bookmark.index ?? 0;
+    if (index > maxIndex) {
+      maxIndex = index;
+    }
+  }
+
+  return maxIndex + 1;
 }
 
+
+function renameNode(id: string | number, nextTitle: string) {
+  const normalizedTitle = nextTitle.trim();
+  if (!normalizedTitle) return;
+
+  chrome.bookmarks.update(String(id), { title: normalizedTitle }, () => {
+    if (chrome.runtime.lastError) {
+      console.error(chrome.runtime.lastError);
+      return;
+    }
+    getBookmarks();
+  });
+}
 
 function removeBookmark(id: string | number) {
   if (confirm("确定要删除这个书签吗？")) {
     chrome.bookmarks.remove(String(id), () => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError);
+        return;
+      }
+      getBookmarks();
+    });
+  }
+}
+
+function removeFolder(id: string | number) {
+  if (confirm("确定要删除这个文件夹吗？其中的所有书签和子文件夹都会被删除。")) {
+    // removeTree 会连同子节点一起删除，remove 只能删空文件夹
+    chrome.bookmarks.removeTree(String(id), () => {
       if (chrome.runtime.lastError) {
         console.error(chrome.runtime.lastError);
         return;
@@ -225,127 +278,22 @@ function go2otherUrl(url: string) {
 </script>
 
 <template>
-  <!-- v-if="initScale" 是为了确保得到缓存的数据，让画布的初始偏移从 props 中获取 -->
-  <zoomCanvas v-if="initScale" :list="bookmarkFolders" @update="update" @update:transform="onUpdateTransform"
+  <InfinityCanvas v-if="initScale" :list="bookmarkFolders" @update="update" @update:transform="onUpdateTransform"
     :canvasWidth="canvasWidth" :canvasHeight="canvasHeight" :init-pos-x="initPosX" :init-pos-y="initPosY"
     :init-scale="initScale">
     <template #default="{ item }">
-      <div class="card">
-        <h3>{{ item.title }}</h3>
-        <div class="bookmark-list-container">
-          <VirtualList :list="item.bookmarks" :item-height="30" @dragover.prevent @drop="onDrop"
-            :data-folder-id="item.id" :data-index="getTargetIndex(item as ICard)">
-            <template #default="{ data: o }">
-              <div class="bookmark-item" @mousedown.stop @dragstart="onDragstart" :title="o.title" :data-id="o.id"
-                :data-index="o.index" :data-folder-id="item.id">
-                <img :src="`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(o.url)}`"
-                  alt="logo">
-                <a v-if="o.url.startsWith('http')" :href="o.url" target="_blank">{{ o.title || '未命名书签' }}</a>
-                <a href="#" @click.prevent="go2otherUrl(o.url)" v-else>{{ o.title || '未命名书签' }}</a>
-                <div title="删除" class="remove" @click="removeBookmark(o.id)">
-                  ❌
-                </div>
-              </div>
-            </template>
-          </VirtualList>
-        </div>
-      </div>
+      <FolderCard
+        :folder="item as any"
+        :get-target-index="(card: any) => getTargetIndex(card as ICard)"
+        @dragstart="onDragstart"
+        @drop="onDrop"
+        @rename="renameNode"
+        @remove="removeBookmark"
+        @remove-folder="removeFolder"
+        @open="go2otherUrl"
+      />
     </template>
-  </zoomCanvas>
+  </InfinityCanvas>
 </template>
 
-<style lang="css">
-.card {
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-
-  background: linear-gradient(135deg, #f0f9ff, #e0f7fa);
-  color: #333;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  user-select: none;
-  overflow: hidden;
-  padding: 0 16px 16px;
-
-  --title-height: 40px;
-
-  h3 {
-    position: relative;
-    margin: 0;
-    height: var(--title-height);
-    line-height: var(--title-height);
-    font-size: 18px;
-    font-weight: 600;
-    text-align: center;
-    color: #0077b6;
-
-    &::after {
-      content: "";
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 1px;
-      background: linear-gradient(to right, transparent, #ccc 30%, #ccc 70%, transparent);
-      pointer-events: none;
-    }
-  }
-
-  .bookmark-list-container {
-    height: calc(100% - var(--title-height));
-  }
-
-  .bookmark-item {
-    height: 30px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-
-    img {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      margin-right: 8px;
-    }
-
-    a {
-      width: 100%;
-      display: block;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      overflow: hidden;
-      text-decoration: none;
-      font-size: 14px;
-      color: #444;
-      padding: 6px 8px;
-      border-radius: 6px;
-      transition: background 0.2s, color 0.2s;
-
-      &:hover {
-        background-color: rgba(0, 119, 182, 0.1);
-        color: #0077b6;
-        text-decoration: none;
-      }
-    }
-
-    .remove {
-      margin-left: 8px;
-      cursor: pointer;
-      color: #ff4d4f;
-      font-size: 12px;
-      width: 24px;
-      height: 24px;
-      align-items: center;
-      justify-content: center;
-      display: none;
-    }
-  }
-
-  .bookmark-item:hover {
-    .remove {
-      display: flex;
-    }
-  }
-}
-</style>
+<style lang="css"></style>
