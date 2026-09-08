@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 280" width="440" height="280">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2c3448"/>
+      <stop offset="1" stop-color="#181d2b"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a3e58e"/>
+      <stop offset="1" stop-color="#6fb85c"/>
+    </linearGradient>
+    <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="11" cy="11" r="1.8" fill="#ffffff" opacity="0.10"/>
+    </pattern>
+  </defs>
+
+  <rect width="440" height="280" fill="url(#bg)"/>
+  <rect width="440" height="280" fill="url(#dots)"/>
+
+  <g transform="rotate(6 151 62)">
+    <rect x="121" y="46" width="66" height="40" rx="9" fill="#000000" opacity="0.35"/>
+    <rect x="118" y="42" width="66" height="40" rx="9" fill="#eef1f6"/>
+    <circle cx="132" cy="56" r="6" fill="#f2795c"/>
+    <rect x="144" y="52.5" width="30" height="5" rx="2.5" fill="#c3cad6"/>
+    <rect x="130" y="66" width="42" height="4.5" rx="2.25" fill="#dde2ea"/>
+  </g>
+
+  <g transform="rotate(-5 77 216)">
+    <rect x="51" y="202" width="58" height="36" rx="8" fill="#000000" opacity="0.35"/>
+    <rect x="48" y="198" width="58" height="36" rx="8" fill="#eef1f6"/>
+    <circle cx="61" cy="211" r="5" fill="#f2b144"/>
+    <rect x="71" y="208.5" width="24" height="4.5" rx="2.25" fill="#c3cad6"/>
+  </g>
+
+  <g transform="rotate(-3 96 141)">
+    <rect x="46" y="101" width="108" height="90" rx="20" fill="#000000" opacity="0.40"/>
+    <rect x="42" y="96" width="108" height="90" rx="20" fill="url(#green)"/>
+    <path d="M79 112 q0 -8 8 -8 h18 q8 0 8 8 v54 l-17 -13 -17 13 z" fill="#ffffff"/>
+  </g>
+
+  <text x="192" y="126" font-family="PingFang SC, Helvetica, Arial, sans-serif" font-size="26" font-weight="bold" fill="#ffffff" letter-spacing="0.5">Better-Bookmarks</text>
+  <text x="192" y="158" font-family="PingFang SC, Helvetica, Arial, sans-serif" font-size="15" fill="#c3cad6" letter-spacing="1">无限画布 · 平铺书签管理器</text>
+  <circle cx="198" cy="188" r="5" fill="#f2795c"/>
+  <circle cx="214" cy="188" r="5" fill="#5e9bf0"/>
+  <circle cx="230" cy="188" r="5" fill="#f2b144"/>
+  <rect x="244" y="184" width="150" height="8" rx="4" fill="#ffffff" opacity="0.14"/>
+</svg>

@@ -5,9 +5,9 @@
   "description": "一个以无限画布平铺展示的书签管理器",
   "permissions": ["bookmarks", "storage", "contextMenus"],
   "icons": {
-    "16": "icons/icon.png",
-    "48": "icons/icon.png",
-    "128": "icons/icon.png"
+    "16": "icons/icon-v2-16.png",
+    "48": "icons/icon-v2-48.png",
+    "128": "icons/icon-v2-128.png"
   },
   "chrome_url_overrides": {
     "bookmarks": "bookmarks.html"
