@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import InfinityCanvas from '../components/infinity-canvas.vue';
 import FolderCard from '../components/FolderCard.vue';
@@ -34,10 +34,11 @@ const debounceUpdate = useDebounceFn(() => {
     if (!item) continue;
 
     nextPosition[id] = {
-      left: item.left,
-      top: item.top,
-      width: item.width,
-      height: item.height
+      // 取整后存储：亚像素精度没有意义，还能显著节省 sync 配额（8KB/条）
+      left: Math.round(item.left),
+      top: Math.round(item.top),
+      width: Math.round(item.width),
+      height: Math.round(item.height)
     };
   }
 
@@ -129,6 +130,7 @@ onMounted(async () => {
   });
 
   getBookmarks();
+  bookmarkChangeEvents.forEach((event) => event.addListener(debounceReload));
 });
 
 async function getBookmarks() {
@@ -156,6 +158,22 @@ async function getBookmarks() {
   bookmarkFolders.value = _list;
 }
 
+// 书签在外部（原生管理器、其他窗口、其他设备同步）变化时自动刷新画布
+const debounceReload = useDebounceFn(() => {
+  getBookmarks();
+}, 300);
+
+const bookmarkChangeEvents = [
+  chrome.bookmarks.onCreated,
+  chrome.bookmarks.onRemoved,
+  chrome.bookmarks.onChanged,
+  chrome.bookmarks.onMoved,
+  chrome.bookmarks.onChildrenReordered,
+];
+
+onBeforeUnmount(() => {
+  bookmarkChangeEvents.forEach((event) => event.removeListener(debounceReload));
+});
 
 function onDragstart(e: DragEvent) {
   const target = e.currentTarget as HTMLElement;
@@ -214,9 +232,8 @@ function onDrop(e: DragEvent) {
   }, () => {
     if (chrome.runtime.lastError) {
       console.error(chrome.runtime.lastError);
-      return;
     }
-    getBookmarks();
+    // 成功后由 onMoved 事件触发刷新
   });
 }
 
@@ -246,9 +263,8 @@ function renameNode(id: string | number, nextTitle: string) {
   chrome.bookmarks.update(String(id), { title: normalizedTitle }, () => {
     if (chrome.runtime.lastError) {
       console.error(chrome.runtime.lastError);
-      return;
     }
-    getBookmarks();
+    // 成功后由 onChanged 事件触发刷新
   });
 }
 
@@ -257,9 +273,8 @@ function removeBookmark(id: string | number) {
     chrome.bookmarks.remove(String(id), () => {
       if (chrome.runtime.lastError) {
         console.error(chrome.runtime.lastError);
-        return;
       }
-      getBookmarks();
+      // 成功后由 onRemoved 事件触发刷新
     });
   }
 }
@@ -270,9 +285,8 @@ function removeFolder(id: string | number) {
     chrome.bookmarks.removeTree(String(id), () => {
       if (chrome.runtime.lastError) {
         console.error(chrome.runtime.lastError);
-        return;
       }
-      getBookmarks();
+      // 成功后由 onRemoved 事件触发刷新
     });
   }
 }
