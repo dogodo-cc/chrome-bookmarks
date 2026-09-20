@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./icons/icon.png" width="128"/>
+<img src="./images/store/promo-marquee-1400x560.png"/>
 
 # Better-Bookmarks
 
