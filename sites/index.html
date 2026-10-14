@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f5ef">
+  <title>Better-Bookmarks — 把收藏展开</title>
+  <meta name="description" content="用无限画布重新认识你的书签。自由拖动、缩放与整理，把收藏展开成自己的工作台。Better-Bookmarks，适用于 Chrome 与 Edge。">
+  <meta property="og:title" content="Better-Bookmarks · 把收藏展开">
+  <meta property="og:description" content="你的收藏，值得一整张画布。一个以无限画布平铺展示的书签管理器。">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <script type="module" src="/src/main.ts"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="Better-Bookmarks 首页"><img src="assets/logo.svg" alt="" width="34" height="34"><span>Better<span class="brand-dash">—</span>Bookmarks</span></a>
+    <nav aria-label="主导航"><a href="#features">功能</a><a href="#guide">使用指南</a><a href="#faq">常见问题</a></nav>
+    <a class="nav-install" href="#install">添加到浏览器 <span aria-hidden="true">↗</span></a>
+  </header>
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot"></span> 给书签一点自由 / A SPACE FOR YOUR LINKS</p>
+        <h1 id="hero-title">你的收藏，<br>值得一整张<br><span class="highlight">画布<span class="spark" aria-hidden="true">✳</span></span>。</h1>
+        <p class="hero-description">从层层文件夹里走出来。<br>在无限画布上，把灵感、工具和日常<br class="desktop-break">展开成自己的工作台。</p>
+        <div class="hero-actions"><a class="button button-dark" href="https://chromewebstore.google.com/detail/ieahkhpkiipfkiecndclbbfjfhceiknh?utm_source=item-share-cb" target="_blank" rel="noopener"><img src="assets/chrome.png" alt="" width="20" height="20">添加到 Chrome <span aria-hidden="true">↗</span></a><a class="text-link" id="start-demo" href="#try-demo">先玩一下 <span aria-hidden="true">↘</span></a></div>
+        <p class="hero-note">开源 · 使用现有书签 · 支持 Chrome / Edge</p>
+      </div>
+      <div class="hero-visual" id="playground">
+        <div class="floating-note">点击试玩，找到你的布局 <span aria-hidden="true">⤵</span></div>
+        <div class="browser-frame">
+          <div class="browser-top"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><div class="browser-tab"><img src="assets/logo.svg" alt="" width="14" height="14">我的书签工作台 <span aria-hidden="true">×</span></div><span class="tab-plus" aria-hidden="true">+</span></div>
+          <div class="browser-address"><span aria-hidden="true">← &nbsp; → &nbsp; ↻</span><span class="address-pill"><span aria-hidden="true">▧</span> &nbsp; Better-Bookmarks</span><span aria-hidden="true">⋮</span></div>
+          <div class="canvas" id="hero-preview" role="region" aria-label="书签工作台示意，点击先玩一下可体验真实操作">
+            <div class="canvas-world" id="canvas-world">
+              <article class="bookmark-card card-design" data-x="46" data-y="45" style="left:46px;top:45px"><div class="card-handle"><span><span class="folder-icon">▱</span> 设计灵感</span><span class="handle-dots" aria-hidden="true">⠿</span></div><ul><li><span class="favicon figma">F</span><span>Figma Community<small>灵感从这里开始</small></span><span class="bookmark-arrow">↗</span></li><li><span class="favicon dribbble">D</span><span>Dribbble</span></li><li><span class="favicon are">A</span><span>Are.na</span></li><li><span class="favicon pinterest">P</span><span>Pinterest</span></li></ul><div class="card-foot">4 个书签 <span>↗</span></div></article>
+              <article class="bookmark-card card-tools" data-x="321" data-y="15" style="left:321px;top:15px"><div class="card-handle"><span><span class="folder-icon">▱</span> 日常工具</span><span class="handle-dots" aria-hidden="true">⠿</span></div><ul><li><span class="favicon notion">N</span><span>Notion</span></li><li><span class="favicon linear">L</span><span>Linear</span></li><li><span class="favicon excali">✎</span><span>Excalidraw</span></li></ul><div class="card-foot">3 个书签 <span>↗</span></div></article>
+              <article class="bookmark-card card-code" data-x="280" data-y="215" style="left:280px;top:215px"><div class="card-handle"><span><span class="folder-icon">▱</span> 开发手册</span><span class="handle-dots" aria-hidden="true">⠿</span></div><ul><li><span class="favicon github">⌘</span><span>GitHub</span></li><li><span class="favicon mdn">M</span><span>MDN Web Docs</span></li><li><span class="favicon vue">V</span><span>Vue.js</span></li><li><span class="favicon ts">TS</span><span>TypeScript</span></li></ul><div class="card-foot">4 个书签 <span>↗</span></div></article>
+              <article class="bookmark-card card-life" data-x="18" data-y="294" style="left:18px;top:294px"><div class="card-handle"><span><span class="folder-icon">▱</span> 生活与留白</span><span class="handle-dots" aria-hidden="true">⠿</span></div><ul><li><span class="favicon spotify">S</span><span>专注时的歌单</span></li><li><span class="favicon read">R</span><span>周末阅读清单</span></li></ul><div class="card-foot">2 个书签 <span>↗</span></div></article>
+            </div>
+            <span class="canvas-label">YOUR LITTLE CORNER OF THE INTERNET</span>
+            <a class="hero-demo-trigger" id="start-demo-inline" href="#try-demo">开始试玩 ↘</a>
+          </div>
+        </div>
+        <div class="demo-caption"><span><span class="status-dot"></span> 示意布局 · 点击试玩体验真实操作</span><span>拖动整理 · 无限画布</span></div>
+      </div>
+    </section>
+    <div class="intro-strip"><p>收藏，是为了再次遇见。</p><span>少一点翻找，多一点 <em>「就在这里」。</em></span><a href="#features" aria-label="了解功能"><span aria-hidden="true">↓</span></a></div>
+    <section class="features section-wrap" id="features" aria-labelledby="features-title">
+      <div class="section-heading"><p class="eyebrow">01 / 重新认识你的收藏</p><h2 id="features-title">不止保存链接。<br>也保存你的<span class="underlined">思考方式。</span></h2><p>把同一件事需要的链接放在一起。<br>位置、大小、距离，都由你决定。</p></div>
+      <div class="feature-layout"><div class="feature-art" aria-hidden="true"><div class="art-grid"></div><div class="mini-folder mini-a"><span>▱ 灵感</span><i></i><i></i><i></i></div><div class="mini-folder mini-b"><span>▱ 项目</span><i></i><i></i></div><div class="mini-folder mini-c"><span>▱ 日常</span><i></i><i></i></div><svg class="art-path" viewBox="0 0 500 350"><path d="M195 125 C280 110 235 235 330 235"/><path d="m322 225 10 12-15 6"/></svg><span class="art-caption">有条理，也有自己的样子。</span><span class="art-cross">✳</span></div><div class="feature-list"><article><span class="feature-number">01</span><div><h3>一眼看见整片收藏</h3><p>文件夹以卡片平铺在无限画布上。缩小查看全局，放大专注当下，不必在层层目录之间来回切换。</p></div><span class="feature-symbol" aria-hidden="true">⊞</span></article><article><span class="feature-number">02</span><div><h3>整理，像挪动桌面上的便签</h3><p>拖动卡片改变位置，拉动边缘调整大小；把书签拖进另一个文件夹，让相关内容自然聚在一起。</p></div><span class="feature-symbol" aria-hidden="true">↗</span></article><article><span class="feature-number">03</span><div><h3>熟悉的书签，新的打开方式</h3><p>直接使用浏览器里的现有书签。重命名、删除与移动都在画布里完成，布局由浏览器存储保存。</p></div><span class="feature-symbol" aria-hidden="true">⌘</span></article></div></div>
+    </section>
+    <section class="product-section" aria-labelledby="product-title">
+      <div class="product-heading"><div><p class="eyebrow">一个插件，一张属于你的桌面</p><h2 id="product-title">让每一个「先收藏」，<br>都有一个好位置。</h2></div><p>就在这里，试试你的书签工作台。<br>拖动、缩放、整理，找到顺手的布局。</p></div>
+      <div class="product-playground" id="try-demo" tabindex="-1" role="region" aria-label="书签画布试玩" aria-describedby="demo-instructions">
+        <p class="inline-demo-instructions" id="demo-instructions">拖动卡片整理布局，右键拖动画布，左键拖动空白处框选。点选卡片后可调整大小。</p>
+        <div id="demo-slot"></div>
+        <p class="inline-demo-note">示例数据 · 可重命名、删除与移动书签 · 不会读取或修改你的浏览器书签</p>
+      </div>
+      <div class="product-bottom"><span>为好奇心腾出空间。</span><span>LESS SEARCHING. MORE EXPLORING.</span></div>
+    </section>
+    <section class="guide section-wrap" id="guide" aria-labelledby="guide-title"><div class="section-heading"><p class="eyebrow">02 / 从这里开始</p><h2 id="guide-title">换个视角，<span class="serif">just a few moves.</span></h2><p>装好插件，点击工具栏图标打开画布。<br>右上角的 💡，随时为你提供操作指南。</p></div><div class="guide-grid"><article><div class="gesture-art gesture-pan" aria-hidden="true"><span>↔</span><div class="gesture-card"></div><span>↕</span></div><span class="step-label">01 — 移动</span><h3>随手逛逛你的收藏</h3><p>双指滑动或滚动滚轮移动画布。<br>也可以按住鼠标右键拖动。</p><span class="key-label">双指滑动 <span>/</span> 右键拖动</span></article><article><div class="gesture-art gesture-zoom" aria-hidden="true"><div class="gesture-card"></div><span>↖</span><span>↘</span></div><span class="step-label">02 — 缩放</span><h3>远看全貌，近看细节</h3><p>双指捏合，或按住 Ctrl 滚动滚轮。<br>在全局和细节之间自由切换。</p><span class="key-label">双指捏合 <span>/</span> Ctrl + 滚轮</span></article><article><div class="gesture-art gesture-drag" aria-hidden="true"><div class="gesture-card"></div><span>↗</span><div class="drag-cursor">➤</div></div><span class="step-label">03 — 整理</span><h3>把位置交给直觉</h3><p>拖动卡片摆放文件夹。<br>拖动边缘或角落，调整卡片大小。</p><span class="key-label">左键拖动 <span>/</span> 拖动边缘</span></article></div><p class="guide-footnote">还有一点小技巧：左键拖动空白处可框选卡片；悬停标题或书签，可重命名与删除。</p></section>
+    <section class="faq section-wrap" id="faq" aria-labelledby="faq-title"><div><p class="eyebrow">03 / 你可能想知道</p><h2 id="faq-title">一点小问答。</h2><p class="faq-aside">还想了解更多？<br><a href="https://github.com/dogodo-cc/chrome-bookmarks/issues" target="_blank" rel="noopener">在 GitHub 聊聊 <span aria-hidden="true">↗</span></a></p></div><div class="faq-list"><details open><summary>需要重新导入我的书签吗？<span aria-hidden="true">+</span></summary><p>不需要。插件直接读取浏览器现有书签，把文件夹展示为画布上的卡片。对书签的移动、重命名和删除，也会反映在浏览器书签中。</p></details><details><summary>支持哪些浏览器？<span aria-hidden="true">+</span></summary><p>适用于 Chrome 和 Edge。点击页面上的安装按钮前往 Chrome 网上应用店；Edge 用户可通过同一商店安装扩展。</p></details><details><summary>我的画布布局会保存吗？<span aria-hidden="true">+</span></summary><p>会。插件使用浏览器的同步存储保存卡片位置、大小和画布视角；同步存储不可用时，会回退到本地存储。跨设备同步取决于浏览器的同步设置和存储配额。</p></details><details><summary>插件需要哪些权限？<span aria-hidden="true">+</span></summary><p>当前版本声明了 bookmarks、storage 和 contextMenus 权限，用于书签管理、设置保存和上下文菜单。书签图标会向 favicon.im 请求获取，你可以在 GitHub 查看完整源码。</p></details><details><summary>在哪里查看操作指南或反馈问题？<span aria-hidden="true">+</span></summary><p>打开插件后，点击右上角的 💡 图标即可查看手势和鼠标操作指南。问题和建议可提交到 <a href="https://github.com/dogodo-cc/chrome-bookmarks/issues" target="_blank" rel="noopener">GitHub Issues ↗</a>。</p></details></div></section>
+    <section class="install section-wrap" id="install" aria-labelledby="install-title"><div class="install-top"><span class="eyebrow">你的下一次灵感，值得被好好收藏。</span><span class="install-star" aria-hidden="true">✳</span></div><h2 id="install-title">把收藏<span class="serif">展开。</span></h2><div class="install-bottom"><p>给你的浏览器，加一张无限画布。<br>从现在的书签开始。</p><div class="install-actions"><a class="button button-dark" href="https://chromewebstore.google.com/detail/ieahkhpkiipfkiecndclbbfjfhceiknh?utm_source=item-share-cb" target="_blank" rel="noopener"><img src="assets/chrome.png" alt="" width="20" height="20">添加到 Chrome <span aria-hidden="true">↗</span></a><a class="button button-outline" href="https://chromewebstore.google.com/detail/ieahkhpkiipfkiecndclbbfjfhceiknh?utm_source=item-share-cb" target="_blank" rel="noopener"><img src="assets/edge.png" alt="" width="20" height="20">添加到 Edge <span aria-hidden="true">↗</span></a></div></div></section>
+  </main>
+  <footer><a class="brand" href="#"><img src="assets/logo.svg" alt="" width="28" height="28"><span>Better—Bookmarks</span></a><span>把喜欢的互联网，放在一起。</span><div><a href="https://github.com/dogodo-cc/chrome-bookmarks" target="_blank" rel="noopener">GitHub ↗</a><a href="https://github.com/dogodo-cc/chrome-bookmarks/blob/master/LICENSE" target="_blank" rel="noopener">MIT 开源许可 ↗</a><a href="#">回到顶部 ↑</a></div></footer>
+</body>
+</html>

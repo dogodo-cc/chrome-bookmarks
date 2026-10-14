@@ -1,22 +1,24 @@
 {
   "type": "module",
   "scripts": {
-    "dev:web": "npx vite --config vite.config.dev.ts",
+    "dev:site": "vite --config sites/vite.config.ts",
+    "build:site": "vue-tsc --project sites/tsconfig.json --noEmit && vite build --config sites/vite.config.ts",
+    "preview:site": "vite preview --config sites/vite.config.ts",
     "dev": "npx vite build --watch ",
     "build": "npx vue-tsc -b && npx vite build",
     "postbuild": "node ./scripts/build.js"
   },
   "dependencies": {
-    "vue": "^3.5.18"
+    "vue": "^3.5.44"
   },
   "devDependencies": {
     "@types/chrome": "^0.2.9",
     "@types/node": "^26.4.1",
-    "@vitejs/plugin-vue": "^6.0.8",
+    "@vitejs/plugin-vue": "^6.0.10",
     "@vue/tsconfig": "^0.9.1",
     "@vueuse/core": "^14.4.0",
     "typescript": "~5.9.3",
-    "vite": "^8.2.2",
-    "vue-tsc": "^3.3.11"
+    "vite": "^8.3.4",
+    "vue-tsc": "^3.3.13"
   }
 }

@@ -24,7 +24,19 @@
  <img src="./images/demo.png"/>
 </div>
 
-## 使用方式
+## 官网与试玩开发
+
+官网源码位于 `sites/`，使用 Vite 构建，Vue 试玩直接 import `src/components/` 中的真实组件。
+
+```sh
+npm install
+npm run dev:site
+npm run build:site
+```
+
+网站与插件共用根目录的依赖。官网产物在 `sites/dist/`，插件产物仍在 `dist/`；试玩的书签修改只影响示例数据。详细说明见 [sites/README.md](sites/README.md)。
+
+## 插件使用方式
 
 点击页面右上角的 💡 图标，可以随时查看操作指南。
 

@@ -170,6 +170,21 @@ function zoomAtPointer(nextScale: number, clientX: number, clientY: number) {
     scale.value = nextScale;
 }
 
+// Hosts can provide zoom/reset controls without duplicating canvas behavior.
+function zoomBy(delta: number) {
+    zoomAtPointer(limitScale(scale.value + delta), rootLeft.value + rootWidth.value / 2, rootTop.value + rootHeight.value / 2);
+}
+
+function setTransform(nextScale: number, nextPosX = 0, nextPosY = 0) {
+    const boundedScale = limitScale(nextScale);
+    scale.value = boundedScale;
+    posX.value = limitX(nextPosX, boundedScale);
+    posY.value = limitY(nextPosY, boundedScale);
+    scheduleFrameStyle();
+}
+
+defineExpose({ zoomBy, setTransform });
+
 function handleWheelZoom(e: WheelEvent) {
     const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
     const oldScale = scale.value;
