@@ -4,6 +4,8 @@
 
 # Better-Bookmarks
 
+[官网](https://weihai.dogodo.cc/chrome-bookmarks/)
+
 ![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/ieahkhpkiipfkiecndclbbfjfhceiknh)
 ![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/ieahkhpkiipfkiecndclbbfjfhceiknh)
 ![Chrome Web Store Stars](https://img.shields.io/chrome-web-store/stars/ieahkhpkiipfkiecndclbbfjfhceiknh)
